@@ -149,6 +149,27 @@ node src/index.js config set orchestration.defaultMode concurrent
 node src/index.js config reset
 ```
 
+### Agent Management
+
+Manage and inspect agents with the `agent` command:
+
+```bash
+# List all available agents
+node src/index.js agent list
+
+# Show detailed information about an agent
+node src/index.js agent info planner
+node src/index.js agent info developer
+node src/index.js agent info qa
+node src/index.js agent info docs
+```
+
+The CLI includes four default agents:
+- **planner**: Handles analysis and planning tasks
+- **developer**: Handles implementation and coding tasks
+- **qa**: Handles testing and quality assurance tasks
+- **docs**: Handles documentation tasks
+
 ## Configuration Guide
 
 ### Agent Configuration
