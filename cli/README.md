@@ -71,6 +71,15 @@ supadupacode config set orchestration.defaultMode concurrent
 supadupacode config reset
 ```
 
+#### Agent Command
+Manage agents (list, info):
+
+```bash
+supadupacode agent list
+supadupacode agent info planner
+supadupacode agent info developer
+```
+
 ## Configuration
 
 The CLI uses a `.supadupacode.json` file in the project root. Initialize with:
