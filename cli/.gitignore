@@ -1,6 +1,7 @@
 node_modules/
 .supadupacode.json
 .supadupacode/
+.supadupacode.token
 plan-*.json
 *.log
 .DS_Store

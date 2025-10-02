@@ -5,9 +5,13 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import Ajv from 'ajv';
+import { configSchema } from './config-schema.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const ajv = new Ajv({ allErrors: true });
 
 export class ConfigManager {
   constructor(configPath = null) {
@@ -76,6 +80,10 @@ export class ConfigManager {
     try {
       const data = await fs.readFile(this.configPath, 'utf-8');
       this.config = JSON.parse(data);
+      
+      // Validate configuration
+      this.validate(this.config);
+      
       return this.config;
     } catch (error) {
       if (error.code === 'ENOENT') {
@@ -89,6 +97,9 @@ export class ConfigManager {
    * Save configuration
    */
   async save(config) {
+    // Validate before saving
+    this.validate(config);
+    
     this.config = config;
     await fs.writeFile(this.configPath, JSON.stringify(config, null, 2), 'utf-8');
   }
@@ -149,5 +160,22 @@ export class ConfigManager {
       await this.load();
     }
     return this.config;
+  }
+
+  /**
+   * Validate configuration against schema
+   */
+  validate(config) {
+    const validate = ajv.compile(configSchema);
+    const valid = validate(config);
+    
+    if (!valid) {
+      const errors = validate.errors.map(err => 
+        `${err.instancePath} ${err.message}`
+      ).join(', ');
+      throw new Error(`Configuration validation failed: ${errors}`);
+    }
+    
+    return true;
   }
 }
