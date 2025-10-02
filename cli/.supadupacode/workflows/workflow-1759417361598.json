@@ -1,0 +1,32 @@
+{
+  "id": "workflow-1759417361598",
+  "name": "test-workflow",
+  "description": "Test workflow",
+  "createdAt": "2025-10-02T15:02:41.598Z",
+  "steps": [
+    {
+      "name": "Initialize",
+      "agent": "planner",
+      "condition": "always",
+      "onError": "retry"
+    },
+    {
+      "name": "Execute",
+      "agent": "developer",
+      "condition": "previous_success",
+      "onError": "rollback"
+    },
+    {
+      "name": "Validate",
+      "agent": "qa",
+      "condition": "previous_success",
+      "onError": "notify"
+    }
+  ],
+  "parallelExecution": false,
+  "errorHandling": {
+    "strategy": "retry",
+    "maxRetries": 3,
+    "backoffMultiplier": 2
+  }
+}
