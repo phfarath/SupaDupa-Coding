@@ -3,6 +3,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { retryWithBackoff, CircuitBreaker } from '../utils/retry.js';
 
 export class Orchestrator extends EventEmitter {
   constructor(config = {}) {
@@ -11,6 +12,7 @@ export class Orchestrator extends EventEmitter {
     this.tasks = new Map();
     this.agents = new Map();
     this.executionMode = config.executionMode || 'sequential';
+    this.circuitBreakers = new Map();
   }
 
   /**
@@ -138,10 +140,42 @@ export class Orchestrator extends EventEmitter {
       throw new Error(`Agent not found: ${task.agent}`);
     }
 
+    // Get or create circuit breaker for this agent
+    if (!this.circuitBreakers.has(task.agent)) {
+      this.circuitBreakers.set(task.agent, new CircuitBreaker({
+        failureThreshold: 5,
+        successThreshold: 2,
+        timeout: 60000
+      }));
+    }
+    
+    const circuitBreaker = this.circuitBreakers.get(task.agent);
     const startTime = Date.now();
+    const maxRetries = this.config.retries || 3;
     
     try {
-      const result = await agent.execute(task);
+      const result = await retryWithBackoff(
+        async () => {
+          return await circuitBreaker.execute(async () => {
+            return await agent.execute(task);
+          });
+        },
+        {
+          maxRetries,
+          initialDelay: 1000,
+          maxDelay: 30000,
+          backoffFactor: 2,
+          onRetry: (error, attempt, delay) => {
+            this.emit('task-retry', { 
+              task, 
+              attempt, 
+              delay, 
+              error: error.message 
+            });
+          }
+        }
+      );
+      
       const duration = Date.now() - startTime;
       
       return {
