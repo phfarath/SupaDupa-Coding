@@ -163,7 +163,7 @@ node src/index.js agent info developer
 node src/index.js agent info qa
 node src/index.js agent info docs
 
-# Create a new agent
+# Create a new agent (persisted to configuration)
 node src/index.js agent create myagent --type=assistant --model=gpt-4 --memory-size=8192
 
 # Start, stop, restart agents
@@ -171,8 +171,11 @@ node src/index.js agent start myagent
 node src/index.js agent stop myagent
 node src/index.js agent restart myagent
 
-# Delete an agent
+# Delete an agent (removes from configuration)
 node src/index.js agent delete myagent
+
+# Note: Custom agents are automatically persisted to .supadupacode.json
+# and will be available in subsequent commands
 
 # Filter agents by status
 node src/index.js agent list --status=active

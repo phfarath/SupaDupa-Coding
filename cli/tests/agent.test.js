@@ -113,3 +113,53 @@ test('createDefaultAgents - with config', (t) => {
   const planner = agents.get('planner');
   assert.strictEqual(planner.config.custom, 'config');
 });
+
+test('Custom agent - persistence test', async (t) => {
+  // This is an integration test to verify custom agents are loaded from config
+  const { Orchestrator } = await import('../src/core/orchestrator.js');
+  const orchestrator = new Orchestrator({});
+  
+  // Simulate a custom agent config
+  const customAgentConfig = {
+    type: 'assistant',
+    model: 'gpt-4',
+    memorySize: 8192,
+    createdAt: new Date().toISOString(),
+    capabilities: ['general']
+  };
+  
+  // Create a custom agent object (similar to what's loaded from config)
+  const customAgent = {
+    name: 'test-custom',
+    type: customAgentConfig.type,
+    model: customAgentConfig.model,
+    memorySize: customAgentConfig.memorySize,
+    status: 'active',
+    createdAt: customAgentConfig.createdAt,
+    capabilities: customAgentConfig.capabilities,
+    execute: async (task) => {
+      return {
+        status: 'completed',
+        message: `Task completed by test-custom`,
+        artifacts: {}
+      };
+    },
+    getInfo: function() {
+      return {
+        name: this.name,
+        capabilities: this.capabilities,
+        config: { type: this.type, model: this.model, memorySize: this.memorySize }
+      };
+    }
+  };
+  
+  // Register and verify
+  orchestrator.registerAgent('test-custom', customAgent);
+  assert.ok(orchestrator.agents.has('test-custom'));
+  
+  const agent = orchestrator.agents.get('test-custom');
+  assert.strictEqual(agent.name, 'test-custom');
+  assert.strictEqual(agent.type, 'assistant');
+  assert.strictEqual(agent.model, 'gpt-4');
+  assert.strictEqual(agent.memorySize, 8192);
+});

@@ -8,10 +8,29 @@ CLI Orchestrator for multi-agent development automation based on the MVP documen
 
 ## Installation
 
+### For Development
+
 ```bash
 cd cli
 npm install
 npm link  # Optional: makes supadupacode available globally
+```
+
+### For Integration into Existing Projects
+
+See the comprehensive [Integration Guide](INTEGRATION.md) for detailed instructions on:
+- Installing the CLI in your existing projects
+- Configuring for different project types
+- Team collaboration workflows
+- CI/CD integration
+- Best practices and troubleshooting
+
+Quick start for existing projects:
+```bash
+cd your-project
+npm install -g supadupacode  # or use npm link for local development
+supadupacode config init
+supadupacode plan "Your feature description"
 ```
 
 ## Usage
@@ -403,7 +422,11 @@ supadupacode plan "test feature"
 ## Documentation
 
 For more details on the architecture and design, see:
-- [MVP Documentation](../docs/MVP.md)
+- [Integration Guide](INTEGRATION.md) - How to use the CLI in existing projects
+- [Usage Guide](USAGE.md) - Detailed command usage and examples
+- [Commands Reference](COMMANDS.md) - Complete command reference
+- [Architecture](ARCHITECTURE.md) - System architecture and design
+- [MVP Documentation](../docs/MVP.md) - Original MVP specification
 
 ## License
 
