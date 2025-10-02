@@ -162,6 +162,21 @@ node src/index.js agent info planner
 node src/index.js agent info developer
 node src/index.js agent info qa
 node src/index.js agent info docs
+
+# Create a new agent
+node src/index.js agent create myagent --type=assistant --model=gpt-4 --memory-size=8192
+
+# Start, stop, restart agents
+node src/index.js agent start myagent
+node src/index.js agent stop myagent
+node src/index.js agent restart myagent
+
+# Delete an agent
+node src/index.js agent delete myagent
+
+# Filter agents by status
+node src/index.js agent list --status=active
+node src/index.js agent list --type=assistant --verbose
 ```
 
 The CLI includes four default agents:
@@ -169,6 +184,135 @@ The CLI includes four default agents:
 - **developer**: Handles implementation and coding tasks
 - **qa**: Handles testing and quality assurance tasks
 - **docs**: Handles documentation tasks
+
+### Memory Management
+
+Manage persistent memory and agent context:
+
+```bash
+# Initialize memory system
+node src/index.js memory init --backend=filesystem
+
+# Show agent context
+node src/index.js memory context show --agent=planner
+
+# Clear agent context (reset memory)
+node src/index.js memory context clear --agent=planner
+
+# Backup agent context
+node src/index.js memory context backup --agent=planner --file=planner-backup.json
+
+# Optimize memory (garbage collection)
+node src/index.js memory optimize
+```
+
+### API Integration Management
+
+Manage external API integrations:
+
+```bash
+# Register an API provider
+node src/index.js api register openai --key=sk-xxx --endpoint=https://api.openai.com/v1 --quota=60
+
+# Check API status
+node src/index.js api status
+
+# Configure authentication
+node src/index.js auth configure openai
+
+# Verify authentication
+node src/index.js auth verify --provider=openai
+```
+
+### Workflow Management
+
+Create and manage multi-agent workflows:
+
+```bash
+# Create a workflow
+node src/index.js workflow create build-feature --description="Build authentication feature"
+
+# List all workflows
+node src/index.js workflow list
+
+# Run a workflow
+node src/index.js workflow run workflow-123
+
+# Check workflow status
+node src/index.js workflow status workflow-123
+
+# View workflow logs
+node src/index.js workflow logs workflow-123
+```
+
+### Monitoring and Observability
+
+Collect metrics, query logs, and configure alerts:
+
+```bash
+# Collect metrics
+node src/index.js metrics collect --format=json --interval=60
+node src/index.js metrics collect --format=prometheus
+
+# Show current metrics
+node src/index.js metrics show
+
+# Query logs
+node src/index.js logs query --agent=planner --severity=error
+node src/index.js logs query --since="2024-01-01" --agent=developer
+
+# Export logs
+node src/index.js logs export --format=json --output=logs-export.json
+
+# Configure alerts
+node src/index.js alert configure high-latency --metric=api.latency --threshold=1000 --channel=slack
+node src/index.js alert configure agent-failure --metric=agent.status --threshold=0 --channel=email
+
+# List alerts
+node src/index.js alert list
+```
+
+### Debugging and Diagnostics
+
+Debug system operations and perform health checks:
+
+```bash
+# Start debug trace
+node src/index.js debug trace --agent=planner --duration=60
+
+# Inspect system components
+node src/index.js debug inspect --component=orchestrator
+
+# Perform system health check
+node src/index.js health
+```
+
+### Environment and Deployment
+
+Manage environments and deployments:
+
+```bash
+# Setup environment
+node src/index.js env setup --env=development
+node src/index.js env setup --env=production
+
+# List environments
+node src/index.js env list
+
+# Deploy to environment
+node src/index.js deploy --env=production
+node src/index.js deploy --env=staging --incremental
+
+# Rollback deployment
+node src/index.js rollback --version=0.9.0
+
+# Show version information
+node src/index.js version
+node src/index.js version --action=list
+
+# Validate configuration
+node src/index.js validate
+```
 
 ## Configuration Guide
 
