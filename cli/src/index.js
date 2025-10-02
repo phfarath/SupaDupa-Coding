@@ -15,6 +15,7 @@ import { workflowCommand } from './commands/workflow.js';
 import { metricsCommand, logsCommand, alertCommand } from './commands/monitoring.js';
 import { debugCommand, healthCommand } from './commands/debug.js';
 import { envCommand, deployCommand, rollbackCommand, versionCommand, validateCommand } from './commands/environment.js';
+import { providerCommand } from './commands/provider.js';
 
 const program = new Command();
 
@@ -75,6 +76,18 @@ program
   .argument('[key]', 'Configuration key')
   .argument('[value]', 'Configuration value')
   .action(configCommand);
+
+// Provider command - manage API providers
+program
+  .command('provider')
+  .description('Manage API providers (add, list, switch, remove, show, update)')
+  .argument('[action]', 'Action: add, list, switch, remove, show, update', 'list')
+  .argument('[name]', 'Provider name')
+  .option('-k, --key <key>', 'API key')
+  .option('-m, --model <model>', 'Model name (e.g., gpt-4, claude-3)')
+  .option('-e, --endpoint <url>', 'API endpoint URL')
+  .option('--set-active', 'Set as active provider')
+  .action(providerCommand);
 
 // Agent command - manage agents
 program
