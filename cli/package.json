@@ -1,0 +1,28 @@
+{
+  "name": "supadupacode",
+  "version": "1.0.0",
+  "description": "CLI Orchestrator for multi-agent development automation",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "supadupacode": "./src/index.js"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test tests/*.test.js",
+    "lint": "echo 'Linting not configured yet'"
+  },
+  "keywords": ["cli", "orchestrator", "automation", "ai-agents", "mcp"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "inquirer": "^9.2.0"
+  },
+  "devDependencies": {}
+}
