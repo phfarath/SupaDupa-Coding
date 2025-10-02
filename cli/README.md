@@ -90,6 +90,31 @@ supadupacode config set orchestration.defaultMode concurrent
 supadupacode config reset
 ```
 
+#### Provider Command
+Manage API providers with encrypted key storage:
+
+```bash
+# Add a provider
+supadupacode provider add openai --key "sk-xxx" --model "gpt-4"
+supadupacode provider add anthropic --key "sk-ant-xxx" --model "claude-3-opus"
+
+# List all providers
+supadupacode provider list
+
+# Switch active provider
+supadupacode provider switch anthropic
+
+# Show provider details
+supadupacode provider show openai
+
+# Update provider
+supadupacode provider update openai --model "gpt-4-turbo"
+supadupacode provider update openai --key "sk-new-key"
+
+# Remove a provider
+supadupacode provider remove openai
+```
+
 #### Agent Command
 Manage agents (list, info, create, start, stop, restart, delete):
 
