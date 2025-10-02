@@ -23,6 +23,14 @@ export async function agentCommand(action = 'list', name, options = {}) {
       orchestrator.registerAgent(agentName, agent);
     }
 
+    // Register custom agents from config
+    if (config.customAgents) {
+      for (const [agentName, agentConfig] of Object.entries(config.customAgents)) {
+        const customAgent = createCustomAgent(agentName, agentConfig);
+        orchestrator.registerAgent(agentName, customAgent);
+      }
+    }
+
     switch (action) {
       case 'list':
         listAgents(orchestrator, options);
@@ -38,7 +46,7 @@ export async function agentCommand(action = 'list', name, options = {}) {
         break;
       
       case 'create':
-        await createAgent(orchestrator, name, options);
+        await createAgent(orchestrator, name, options, configManager);
         break;
       
       case 'start':
@@ -54,7 +62,7 @@ export async function agentCommand(action = 'list', name, options = {}) {
         break;
       
       case 'delete':
-        await deleteAgent(orchestrator, name);
+        await deleteAgent(orchestrator, name, configManager);
         break;
       
       default:
@@ -69,6 +77,35 @@ export async function agentCommand(action = 'list', name, options = {}) {
     console.error(chalk.red('\nError:'), error.message);
     process.exit(1);
   }
+}
+
+function createCustomAgent(name, agentConfig) {
+  return {
+    name,
+    type: agentConfig.type,
+    model: agentConfig.model,
+    memorySize: agentConfig.memorySize,
+    status: 'active',
+    createdAt: agentConfig.createdAt,
+    memoryUsage: 0,
+    cpuUsage: 0,
+    tasksCompleted: 0,
+    capabilities: agentConfig.capabilities || ['general'],
+    execute: async (task) => {
+      return {
+        status: 'completed',
+        message: `Task completed by ${name}`,
+        artifacts: {}
+      };
+    },
+    getInfo: function() {
+      return {
+        name: this.name,
+        capabilities: this.capabilities,
+        config: { type: this.type, model: this.model, memorySize: this.memorySize }
+      };
+    }
+  };
 }
 
 function listAgents(orchestrator, options = {}) {
@@ -146,7 +183,7 @@ function showAgentInfo(orchestrator, name) {
   console.log('  ', chalk.gray('Tasks Completed:'), agent.tasksCompleted || 0);
 }
 
-async function createAgent(orchestrator, name, options) {
+async function createAgent(orchestrator, name, options, configManager) {
   if (!name) {
     console.error(chalk.red('Error: Agent name is required'));
     console.log(chalk.gray('Usage: agent create <name> --type=<type> --model=<model> --memory-size=<size>'));
@@ -168,37 +205,30 @@ async function createAgent(orchestrator, name, options) {
   console.log(chalk.gray('  Model:'), model);
   console.log(chalk.gray('  Memory Size:'), memorySize);
 
-  // Create a new agent instance
-  const agent = {
-    name,
+  const agentConfig = {
     type: agentType,
     model,
     memorySize,
-    status: 'active',
     createdAt: new Date().toISOString(),
-    memoryUsage: 0,
-    cpuUsage: 0,
-    tasksCompleted: 0,
-    capabilities: ['general'],
-    execute: async (task) => {
-      return {
-        status: 'completed',
-        message: `Task completed by ${name}`,
-        artifacts: {}
-      };
-    },
-    getInfo: function() {
-      return {
-        name: this.name,
-        capabilities: this.capabilities,
-        config: { type: this.type, model: this.model, memorySize: this.memorySize }
-      };
-    }
+    capabilities: ['general']
   };
 
+  // Create a new agent instance
+  const agent = createCustomAgent(name, agentConfig);
+
+  // Register agent with orchestrator
   orchestrator.registerAgent(name, agent);
+
+  // Persist to configuration
+  const config = await configManager.load();
+  if (!config.customAgents) {
+    config.customAgents = {};
+  }
+  config.customAgents[name] = agentConfig;
+  await configManager.save(config);
   
   console.log(chalk.green('✓'), `Agent "${name}" created successfully`);
+  console.log(chalk.gray('  Agent persisted to configuration file'));
 }
 
 async function startAgent(orchestrator, name) {
@@ -290,7 +320,7 @@ async function restartAgent(orchestrator, name) {
   console.log(chalk.green('✓'), `Agent "${name}" restarted successfully`);
 }
 
-async function deleteAgent(orchestrator, name) {
+async function deleteAgent(orchestrator, name, configManager) {
   if (!name) {
     console.error(chalk.red('Error: Agent name is required'));
     console.log(chalk.gray('Usage: agent delete <name>'));
@@ -303,6 +333,14 @@ async function deleteAgent(orchestrator, name) {
     process.exit(1);
   }
 
+  // Check if it's a default agent (can't delete those)
+  const defaultAgentNames = ['planner', 'developer', 'qa', 'docs'];
+  if (defaultAgentNames.includes(name)) {
+    console.error(chalk.red(`Cannot delete default agent "${name}"`));
+    console.log(chalk.gray('Default agents (planner, developer, qa, docs) cannot be deleted'));
+    process.exit(1);
+  }
+
   console.log(chalk.cyan(`Deleting agent "${name}"...`));
   
   // Cleanup resources
@@ -312,7 +350,16 @@ async function deleteAgent(orchestrator, name) {
   console.log(chalk.gray('  Closing API connections...'));
   await new Promise(resolve => setTimeout(resolve, 300));
   
+  // Remove from orchestrator
   orchestrator.agents.delete(name);
+  
+  // Remove from configuration
+  const config = await configManager.load();
+  if (config.customAgents && config.customAgents[name]) {
+    delete config.customAgents[name];
+    await configManager.save(config);
+    console.log(chalk.gray('  Removed from configuration file'));
+  }
   
   console.log(chalk.green('✓'), `Agent "${name}" deleted successfully`);
 }
