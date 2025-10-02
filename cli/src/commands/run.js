@@ -7,6 +7,7 @@ import ora from 'ora';
 import { Orchestrator } from '../core/orchestrator.js';
 import { ConfigManager } from '../core/config-manager.js';
 import { BranchManager } from '../git/branch-manager.js';
+import { createDefaultAgents } from '../agents/index.js';
 import { logger } from '../utils/logger.js';
 import { metrics } from '../utils/metrics.js';
 import fs from 'fs/promises';
@@ -27,6 +28,12 @@ export async function runCommand(options) {
     // Initialize orchestrator
     const orchestrator = new Orchestrator(config.orchestration);
     const branchManager = new BranchManager(config.git);
+
+    // Register default agents
+    const defaultAgents = createDefaultAgents(config);
+    for (const [agentName, agent] of defaultAgents) {
+      orchestrator.registerAgent(agentName, agent);
+    }
 
     let plan;
 

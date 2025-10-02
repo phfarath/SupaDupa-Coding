@@ -8,6 +8,7 @@ import { statusCommand } from './commands/status.js';
 import { reviewCommand } from './commands/review.js';
 import { fixCommand } from './commands/fix.js';
 import { configCommand } from './commands/config.js';
+import { agentCommand } from './commands/agent.js';
 
 const program = new Command();
 
@@ -68,6 +69,14 @@ program
   .argument('[key]', 'Configuration key')
   .argument('[value]', 'Configuration value')
   .action(configCommand);
+
+// Agent command - manage agents
+program
+  .command('agent')
+  .description('Manage agents (list, info)')
+  .argument('[action]', 'Action: list, info', 'list')
+  .argument('[name]', 'Agent name (for info action)')
+  .action(agentCommand);
 
 // Error handling
 program.configureOutput({
