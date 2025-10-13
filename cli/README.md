@@ -8,10 +8,29 @@ CLI Orchestrator for multi-agent development automation based on the MVP documen
 
 ## Installation
 
+### For Development
+
 ```bash
 cd cli
 npm install
 npm link  # Optional: makes supadupacode available globally
+```
+
+### For Integration into Existing Projects
+
+See the comprehensive [Integration Guide](INTEGRATION.md) for detailed instructions on:
+- Installing the CLI in your existing projects
+- Configuring for different project types
+- Team collaboration workflows
+- CI/CD integration
+- Best practices and troubleshooting
+
+Quick start for existing projects:
+```bash
+cd your-project
+npm install -g supadupacode  # or use npm link for local development
+supadupacode config init
+supadupacode plan "Your feature description"
 ```
 
 ## Usage
@@ -71,13 +90,157 @@ supadupacode config set orchestration.defaultMode concurrent
 supadupacode config reset
 ```
 
+#### Provider Command
+Manage API providers with encrypted key storage:
+
+```bash
+# Add a provider
+supadupacode provider add openai --key "sk-xxx" --model "gpt-4"
+supadupacode provider add anthropic --key "sk-ant-xxx" --model "claude-3-opus"
+
+# List all providers
+supadupacode provider list
+
+# Switch active provider
+supadupacode provider switch anthropic
+
+# Show provider details
+supadupacode provider show openai
+
+# Update provider
+supadupacode provider update openai --model "gpt-4-turbo"
+supadupacode provider update openai --key "sk-new-key"
+
+# Remove a provider
+supadupacode provider remove openai
+```
+
 #### Agent Command
-Manage agents (list, info):
+Manage agents (list, info, create, start, stop, restart, delete):
 
 ```bash
 supadupacode agent list
 supadupacode agent info planner
-supadupacode agent info developer
+supadupacode agent create myagent --type=assistant --model=gpt-4 --memory-size=8192
+supadupacode agent start myagent
+supadupacode agent stop myagent
+supadupacode agent restart myagent
+supadupacode agent delete myagent
+```
+
+#### Memory Command
+Manage persistent memory and context:
+
+```bash
+supadupacode memory init --backend=filesystem
+supadupacode memory context show --agent=planner
+supadupacode memory context clear --agent=planner
+supadupacode memory context backup --agent=planner --file=backup.json
+supadupacode memory optimize
+```
+
+#### API Command
+Manage API integrations:
+
+```bash
+supadupacode api register openai --key=sk-xxx --quota=60
+supadupacode api status
+```
+
+#### Auth Command
+Manage authentication:
+
+```bash
+supadupacode auth configure openai
+supadupacode auth verify --provider=openai
+```
+
+#### Workflow Command
+Manage multi-agent workflows:
+
+```bash
+supadupacode workflow create my-workflow --description="Build feature"
+supadupacode workflow run workflow-123
+supadupacode workflow status workflow-123
+supadupacode workflow logs workflow-123
+supadupacode workflow list
+```
+
+#### Metrics Command
+Collect and view system metrics:
+
+```bash
+supadupacode metrics collect --format=json
+supadupacode metrics show
+```
+
+#### Logs Command
+Query and export logs:
+
+```bash
+supadupacode logs query --agent=planner --severity=error
+supadupacode logs export --format=json --output=logs.json
+```
+
+#### Alert Command
+Configure monitoring alerts:
+
+```bash
+supadupacode alert configure high-latency --metric=api.latency --threshold=1000 --channel=slack
+supadupacode alert list
+```
+
+#### Debug Command
+Debug and trace operations:
+
+```bash
+supadupacode debug trace --agent=planner --duration=60
+supadupacode debug inspect --component=system
+```
+
+#### Health Command
+Perform system health check:
+
+```bash
+supadupacode health
+```
+
+#### Environment Command
+Manage execution environments:
+
+```bash
+supadupacode env setup --env=development
+supadupacode env list
+```
+
+#### Deploy Command
+Deploy application:
+
+```bash
+supadupacode deploy --env=production
+supadupacode deploy --env=staging --incremental
+```
+
+#### Rollback Command
+Rollback deployment:
+
+```bash
+supadupacode rollback --version=0.9.0
+```
+
+#### Version Command
+Show version information:
+
+```bash
+supadupacode version
+supadupacode version --action=list
+```
+
+#### Validate Command
+Validate configuration:
+
+```bash
+supadupacode validate
 ```
 
 ## Configuration
@@ -174,6 +337,7 @@ Example: `[frontend] feature: Add login form component`
 
 ## Features
 
+### Core Features
 ✅ Command parsing and routing  
 ✅ Task decomposition and planning  
 ✅ Multi-agent orchestration  
@@ -184,6 +348,76 @@ Example: `[frontend] feature: Add login form component`
 ✅ Status monitoring  
 ✅ PR review automation  
 ✅ Automated fix suggestions  
+
+### Agent Management
+✅ Agent creation with custom configurations  
+✅ Agent lifecycle management (start, stop, restart)  
+✅ Agent filtering and listing  
+✅ Performance monitoring per agent  
+✅ Resource cleanup and deletion  
+
+### Memory Management
+✅ Persistent memory initialization  
+✅ Context management (show, clear, backup)  
+✅ Multiple backend support (filesystem, Redis, PostgreSQL)  
+✅ Memory optimization and garbage collection  
+✅ Context export and import  
+
+### API Integration
+✅ API provider registration  
+✅ Authentication management  
+✅ Rate limiting and quota tracking  
+✅ Real-time API status monitoring  
+✅ Secure credential storage  
+
+### Workflow Orchestration
+✅ Declarative workflow creation  
+✅ Parallel and sequential execution  
+✅ Error handling and retry logic  
+✅ Workflow status tracking  
+✅ Execution history and logs  
+
+### Monitoring & Observability
+✅ Metrics collection (JSON, Prometheus)  
+✅ Advanced log querying and filtering  
+✅ Alert configuration and management  
+✅ Real-time system health checks  
+✅ Performance analytics  
+
+### Debugging & Diagnostics
+✅ Detailed event tracing  
+✅ Component inspection  
+✅ Latency analysis  
+✅ System integrity checks  
+✅ Automated recommendations  
+
+### Deployment & Environment
+✅ Environment setup automation  
+✅ Zero-downtime deployment  
+✅ Version management  
+✅ Rollback capabilities  
+✅ Configuration validation  
+
+### Error Recovery & Resilience
+✅ Retry logic with exponential backoff  
+✅ Circuit breaker pattern for fault tolerance  
+✅ Configurable retry attempts and timeouts  
+✅ Automatic failure recovery  
+✅ Task retry event tracking  
+
+### Security & Authentication
+✅ Secure token generation and management  
+✅ Token-based authentication  
+✅ Token rotation capabilities  
+✅ Encrypted token storage (owner-only permissions)  
+✅ Authorization utilities  
+
+### Configuration Management Enhancements
+✅ JSON Schema validation  
+✅ Comprehensive configuration validation  
+✅ Schema-based error reporting  
+✅ Configuration integrity checks  
+✅ Invalid configuration prevention  
 
 ## Development
 
@@ -220,21 +454,42 @@ supadupacode plan "test feature"
 
 ## Future Enhancements
 
+### Completed ✅
+- [x] Retry logic with circuit breakers
+- [x] Configuration validation with JSON Schema
+- [x] Basic authentication mechanism
+- [x] Expanded test coverage (integration tests)
+- [x] Error recovery with exponential backoff
+
+### In Progress
 - [ ] AI-based task decomposition
 - [ ] Real MCP server integration
 - [ ] GitHub API integration for PR operations
 - [ ] Interactive prompts for complex operations
 - [ ] Watch mode for status monitoring
 - [ ] Event bus for agent communication
-- [ ] Retry logic with circuit breakers
 - [ ] Advanced conflict resolution
 - [ ] Test coverage and quality gates
 - [ ] Telemetry and observability dashboard
 
+### Planned
+- [ ] Persistent storage (database)
+- [ ] Real AI model integration
+- [ ] Performance optimization and caching
+- [ ] Security hardening (full authentication/authorization)
+- [ ] Monitoring integration (Prometheus, Grafana)
+- [ ] Plugin system for extensibility
+- [ ] Web dashboard for monitoring
+- [ ] Documentation auto-generation
+
 ## Documentation
 
 For more details on the architecture and design, see:
-- [MVP Documentation](../docs/MVP.md)
+- [Integration Guide](INTEGRATION.md) - How to use the CLI in existing projects
+- [Usage Guide](USAGE.md) - Detailed command usage and examples
+- [Commands Reference](COMMANDS.md) - Complete command reference
+- [Architecture](ARCHITECTURE.md) - System architecture and design
+- [MVP Documentation](../docs/MVP.md) - Original MVP specification
 
 ## License
 
