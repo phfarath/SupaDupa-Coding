@@ -16,6 +16,9 @@ import { metricsCommand, logsCommand, alertCommand } from './commands/monitoring
 import { debugCommand, healthCommand } from './commands/debug.js';
 import { envCommand, deployCommand, rollbackCommand, versionCommand, validateCommand } from './commands/environment.js';
 import { providerCommand } from './commands/provider.js';
+import { createChatCommand } from './commands/chat.js';
+import { createSetupCommand } from './commands/setup.js';
+import { createSDCommand } from './commands/sd.js';
 
 interface CommandOptions {
   feature?: string;
@@ -265,6 +268,15 @@ program
   .command('validate')
   .description('Validate system configuration')
   .action((options: CommandOptions = {}) => validateCommand(options));
+
+// Chat command - interactive conversational mode
+program.addCommand(createChatCommand());
+
+// Setup command - interactive setup wizard
+program.addCommand(createSetupCommand());
+
+// SD command - simplified interface (can also be run as root command)
+program.addCommand(createSDCommand());
 
 // Error handling
 program.configureOutput({

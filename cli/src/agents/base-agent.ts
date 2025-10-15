@@ -2,16 +2,16 @@
  * Base Agent - template for all agents
  */
 
-interface AgentConfig {
+export interface AgentConfig {
   [key: string]: any;
 }
 
-interface AgentTask {
+export interface AgentTask {
   type: string;
   [key: string]: any;
 }
 
-interface AgentInfo {
+export interface AgentInfo {
   name: string;
   capabilities: string[];
   config: AgentConfig;

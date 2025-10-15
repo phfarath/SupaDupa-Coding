@@ -1,0 +1,68 @@
+{
+  "agents": {
+    "frontend": {
+      "enabled": true,
+      "role": "frontend",
+      "mcp_tools": [
+        "filesystem",
+        "git"
+      ]
+    },
+    "backend": {
+      "enabled": true,
+      "role": "backend",
+      "mcp_tools": [
+        "filesystem",
+        "git",
+        "db"
+      ]
+    },
+    "qa": {
+      "enabled": true,
+      "role": "qa",
+      "mcp_tools": [
+        "filesystem",
+        "git",
+        "test"
+      ]
+    },
+    "docs": {
+      "enabled": true,
+      "role": "docs",
+      "mcp_tools": [
+        "filesystem",
+        "git"
+      ]
+    }
+  },
+  "mcp": {
+    "servers": {
+      "filesystem": {
+        "enabled": true
+      },
+      "git": {
+        "enabled": true
+      },
+      "test": {
+        "enabled": true
+      },
+      "lint": {
+        "enabled": true
+      },
+      "build": {
+        "enabled": true
+      }
+    }
+  },
+  "git": {
+    "branchPrefix": "agent",
+    "commitMessageFormat": "[{agent}] {scope}: {description}",
+    "requirePR": true,
+    "autoMerge": false
+  },
+  "orchestration": {
+    "defaultMode": "sequential",
+    "retries": 3,
+    "timeout": 300000
+  }
+}

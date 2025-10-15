@@ -1,5 +1,5 @@
-import { sdCache } from './cache';
-import { MemoryRecordDTO } from '../../shared/contracts/memory-record';
+import { sdCache } from './cache.js';
+import { MemoryRecordDTO } from '../../../shared/contracts/memory-record.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -23,7 +23,7 @@ interface AdvancedCacheStats {
  * AdvancedCacheClient - Multi-tier caching system for memory records
  */
 export class AdvancedCacheClient {
-  private l1Cache: sdCache;  // In-memory cache (fastest)
+  private l1Cache: sdCache<string, any>;  // In-memory cache (fastest)
   private l2Cache: Map<string, CacheEntry>;  // Disk cache (medium speed)
   private l3CacheDir: string;  // Database cache (slowest but persistent)
   private repository: any;  // Memory repository to use as L3

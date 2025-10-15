@@ -2,15 +2,17 @@
  * Agent exports
  */
 
-export { BaseAgent } from './base-agent';
+export { BaseAgent, AgentConfig, AgentTask, AgentInfo } from './base-agent';
 export { PlannerAgent } from './planner-agent';
 export { DeveloperAgent } from './developer-agent';
 export { QaAgent } from './qa-agent';
 export { DocsAgent } from './docs-agent';
 
-interface AgentConfig {
-  [key: string]: any;
-}
+import { BaseAgent, AgentConfig } from './base-agent';
+import { PlannerAgent } from './planner-agent';
+import { DeveloperAgent } from './developer-agent';
+import { QaAgent } from './qa-agent';
+import { DocsAgent } from './docs-agent';
 
 /**
  * Create default agents

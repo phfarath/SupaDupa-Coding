@@ -4,12 +4,12 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
+
 import Ajv, { ValidateFunction } from 'ajv';
 import { configSchema } from './config-schema.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
+
 
 const ajv = new Ajv({ allErrors: true });
 

@@ -9,18 +9,26 @@ cd cli
 npm install
 ```
 
-### 2. Initialize Configuration
+### 2. Build the TypeScript Project
 
 ```bash
-node src/index.js config init
+npm run build
+```
+
+This compiles the TypeScript source files to JavaScript in the `dist/` directory.
+
+### 3. Initialize Configuration
+
+```bash
+npm start config init
 ```
 
 This creates a `.supadupacode.json` file in your project directory with default settings.
 
-### 3. Create a Plan
+### 4. Create a Plan
 
 ```bash
-node src/index.js plan "Add user authentication with email and password"
+npm start plan "Add user authentication with email and password"
 ```
 
 This will:
@@ -29,10 +37,10 @@ This will:
 - Assign agents to each task
 - Save the plan to a JSON file
 
-### 4. Check Status
+### 5. Check Status
 
 ```bash
-node src/index.js status
+npm start status
 ```
 
 Shows current development status, branch info, and metrics.
@@ -45,13 +53,13 @@ The `plan` command decomposes a feature description into executable tasks:
 
 ```bash
 # Basic plan
-node src/index.js plan "Implement shopping cart"
+npm start plan "Implement shopping cart"
 
 # With JSON output
-node src/index.js plan "Add payment integration" --output json
+npm start plan "Add payment integration" --output json
 
 # Verbose mode
-node src/index.js plan "Create admin dashboard" --verbose
+npm start plan "Create admin dashboard" --verbose
 ```
 
 **Output:**
@@ -66,13 +74,13 @@ Execute plans with the `run` command:
 
 ```bash
 # Run from saved plan
-node src/index.js run --plan plan-12345.json
+npm start run --plan plan-12345.json
 
 # Run by feature name
-node src/index.js run --feature user-authentication
+npm start run --feature user-authentication
 
 # With specific orchestration mode
-node src/index.js run --feature dashboard --mode concurrent
+npm start run --feature dashboard --mode concurrent
 ```
 
 **Orchestration Modes:**
@@ -86,16 +94,16 @@ Track progress with the `status` command:
 
 ```bash
 # General status
-node src/index.js status
+npm start status
 
 # Specific feature
-node src/index.js status --feature user-authentication
+npm start status --feature user-authentication
 
 # All features
-node src/index.js status --all
+npm start status --all
 
 # Watch mode (future)
-node src/index.js status --watch
+npm start status --watch
 ```
 
 ### Reviewing PRs
@@ -104,10 +112,10 @@ Review pull requests with the `review` command:
 
 ```bash
 # Review PR
-node src/index.js review --pr 123
+npm start review --pr 123
 
 # Auto-approve if checks pass
-node src/index.js review --pr 123 --auto-approve
+npm start review --pr 123 --auto-approve
 ```
 
 **Shows:**
@@ -122,13 +130,13 @@ Apply automated fixes with the `fix` command:
 
 ```bash
 # Fix all issues in PR
-node src/index.js fix --pr 123
+npm start fix --pr 123
 
 # Fix specific check
-node src/index.js fix --check unit-tests
+npm start fix --check unit-tests
 
 # Auto-commit fixes
-node src/index.js fix --pr 123 --auto-commit
+npm start fix --pr 123 --auto-commit
 ```
 
 ### Configuration Management
@@ -137,16 +145,16 @@ Manage settings with the `config` command:
 
 ```bash
 # Show all configuration
-node src/index.js config show
+npm start config show
 
 # Show specific key
-node src/index.js config show orchestration.defaultMode
+npm start config show orchestration.defaultMode
 
 # Set value
-node src/index.js config set orchestration.defaultMode concurrent
+npm start config set orchestration.defaultMode concurrent
 
 # Reset to defaults
-node src/index.js config reset
+npm start config reset
 ```
 
 ### Agent Management
@@ -155,31 +163,31 @@ Manage and inspect agents with the `agent` command:
 
 ```bash
 # List all available agents
-node src/index.js agent list
+npm start agent list
 
 # Show detailed information about an agent
-node src/index.js agent info planner
-node src/index.js agent info developer
-node src/index.js agent info qa
-node src/index.js agent info docs
+npm start agent info planner
+npm start agent info developer
+npm start agent info qa
+npm start agent info docs
 
 # Create a new agent (persisted to configuration)
-node src/index.js agent create myagent --type=assistant --model=gpt-4 --memory-size=8192
+npm start agent create myagent --type=assistant --model=gpt-4 --memory-size=8192
 
 # Start, stop, restart agents
-node src/index.js agent start myagent
-node src/index.js agent stop myagent
-node src/index.js agent restart myagent
+npm start agent start myagent
+npm start agent stop myagent
+npm start agent restart myagent
 
 # Delete an agent (removes from configuration)
-node src/index.js agent delete myagent
+npm start agent delete myagent
 
 # Note: Custom agents are automatically persisted to .supadupacode.json
 # and will be available in subsequent commands
 
 # Filter agents by status
-node src/index.js agent list --status=active
-node src/index.js agent list --type=assistant --verbose
+npm start agent list --status=active
+npm start agent list --type=assistant --verbose
 ```
 
 The CLI includes four default agents:
@@ -194,19 +202,19 @@ Manage persistent memory and agent context:
 
 ```bash
 # Initialize memory system
-node src/index.js memory init --backend=filesystem
+npm start memory init --backend=filesystem
 
 # Show agent context
-node src/index.js memory context show --agent=planner
+npm start memory context show --agent=planner
 
 # Clear agent context (reset memory)
-node src/index.js memory context clear --agent=planner
+npm start memory context clear --agent=planner
 
 # Backup agent context
-node src/index.js memory context backup --agent=planner --file=planner-backup.json
+npm start memory context backup --agent=planner --file=planner-backup.json
 
 # Optimize memory (garbage collection)
-node src/index.js memory optimize
+npm start memory optimize
 ```
 
 ### API Integration Management
@@ -215,16 +223,16 @@ Manage external API integrations:
 
 ```bash
 # Register an API provider
-node src/index.js api register openai --key=sk-xxx --endpoint=https://api.openai.com/v1 --quota=60
+npm start api register openai --key=sk-xxx --endpoint=https://api.openai.com/v1 --quota=60
 
 # Check API status
-node src/index.js api status
+npm start api status
 
 # Configure authentication
-node src/index.js auth configure openai
+npm start auth configure openai
 
 # Verify authentication
-node src/index.js auth verify --provider=openai
+npm start auth verify --provider=openai
 ```
 
 ### Workflow Management
@@ -233,19 +241,19 @@ Create and manage multi-agent workflows:
 
 ```bash
 # Create a workflow
-node src/index.js workflow create build-feature --description="Build authentication feature"
+npm start workflow create build-feature --description="Build authentication feature"
 
 # List all workflows
-node src/index.js workflow list
+npm start workflow list
 
 # Run a workflow
-node src/index.js workflow run workflow-123
+npm start workflow run workflow-123
 
 # Check workflow status
-node src/index.js workflow status workflow-123
+npm start workflow status workflow-123
 
 # View workflow logs
-node src/index.js workflow logs workflow-123
+npm start workflow logs workflow-123
 ```
 
 ### Monitoring and Observability
@@ -254,25 +262,25 @@ Collect metrics, query logs, and configure alerts:
 
 ```bash
 # Collect metrics
-node src/index.js metrics collect --format=json --interval=60
-node src/index.js metrics collect --format=prometheus
+npm start metrics collect --format=json --interval=60
+npm start metrics collect --format=prometheus
 
 # Show current metrics
-node src/index.js metrics show
+npm start metrics show
 
 # Query logs
-node src/index.js logs query --agent=planner --severity=error
-node src/index.js logs query --since="2024-01-01" --agent=developer
+npm start logs query --agent=planner --severity=error
+npm start logs query --since="2024-01-01" --agent=developer
 
 # Export logs
-node src/index.js logs export --format=json --output=logs-export.json
+npm start logs export --format=json --output=logs-export.json
 
 # Configure alerts
-node src/index.js alert configure high-latency --metric=api.latency --threshold=1000 --channel=slack
-node src/index.js alert configure agent-failure --metric=agent.status --threshold=0 --channel=email
+npm start alert configure high-latency --metric=api.latency --threshold=1000 --channel=slack
+npm start alert configure agent-failure --metric=agent.status --threshold=0 --channel=email
 
 # List alerts
-node src/index.js alert list
+npm start alert list
 ```
 
 ### Debugging and Diagnostics
@@ -281,13 +289,13 @@ Debug system operations and perform health checks:
 
 ```bash
 # Start debug trace
-node src/index.js debug trace --agent=planner --duration=60
+npm start debug trace --agent=planner --duration=60
 
 # Inspect system components
-node src/index.js debug inspect --component=orchestrator
+npm start debug inspect --component=orchestrator
 
 # Perform system health check
-node src/index.js health
+npm start health
 ```
 
 ### Environment and Deployment
@@ -296,25 +304,25 @@ Manage environments and deployments:
 
 ```bash
 # Setup environment
-node src/index.js env setup --env=development
-node src/index.js env setup --env=production
+npm start env setup --env=development
+npm start env setup --env=production
 
 # List environments
-node src/index.js env list
+npm start env list
 
 # Deploy to environment
-node src/index.js deploy --env=production
-node src/index.js deploy --env=staging --incremental
+npm start deploy --env=production
+npm start deploy --env=staging --incremental
 
 # Rollback deployment
-node src/index.js rollback --version=0.9.0
+npm start rollback --version=0.9.0
 
 # Show version information
-node src/index.js version
-node src/index.js version --action=list
+npm start version
+npm start version --action=list
 
 # Validate configuration
-node src/index.js validate
+npm start validate
 ```
 
 ## Configuration Guide
@@ -465,6 +473,43 @@ The CLI tracks:
 View metrics with:
 ```bash
 node src/index.js status
+```
+
+## Global Installation
+
+To install the SupaDupaCode CLI globally:
+
+```bash
+cd cli
+npm install -g .
+```
+
+Then you can run commands from anywhere:
+
+```bash
+supadupacode plan "Add user authentication"
+supadupacode status
+supadupacode run --plan plan-123.json
+```
+
+## Local Development
+
+For local development without global installation:
+
+```bash
+cd cli
+npm install
+npm run build
+node dist/index.js plan "Add user authentication"
+```
+
+Or use npm scripts:
+
+```bash
+cd cli
+npm install
+npm run build
+npm start plan "Add user authentication"
 ```
 
 ## Tips and Best Practices

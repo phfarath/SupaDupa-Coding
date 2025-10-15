@@ -1,14 +1,13 @@
 ﻿import { EventEmitter } from 'events';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import {
   PlannerInputDTO,
   PlannerPlanDTO,
   PlannerStepDTO,
 } from '../../../shared/contracts/plan-schema';
-import { SD_API_EVENTS } from '../../../../shared/constants/api-events';
+import { SD_API_EVENTS } from '../../constants/api-events';
 import { plannerExecutionQueue, PlannerQueueItemMetadata } from './queue';
 
 interface PlannerOrchestratorConfig {
@@ -17,9 +16,6 @@ interface PlannerOrchestratorConfig {
   baseDir?: string;
   persistOutput?: boolean;
 }
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * sdPlannerOrchestrator - transforms PlannerInputDTO into structured PlannerPlanDTO artifacts.
@@ -60,7 +56,7 @@ export class sdPlannerOrchestrator extends EventEmitter {
       this.persistPlan(plan);
     }
 
-    this.emit(SD_API_EVENTS.SD_EVENT_PLAN_CREATED, { plan });
+    this.emit(SD_API_EVENTS.EVENT_PLAN_CREATED, { plan });
 
     return plan;
   }

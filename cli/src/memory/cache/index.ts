@@ -1,4 +1,4 @@
-import { memoryClient } from './index';
+import { memoryClient } from '../index';
 
 interface CacheKey {
   problem: string;
