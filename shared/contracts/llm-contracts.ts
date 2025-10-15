@@ -1,4 +1,4 @@
-// cli/shared/contracts/llm-contracts.ts
+// shared/contracts/llm-contracts.ts
 
 /**
  * @interface LlmMessage
@@ -16,61 +16,6 @@ export interface LlmMessage {
     timestamp?: string;
     tokenCount?: number;
     reasoning?: string;
-  };
-}
-
-/**
- * @interface ProviderConfig
- * @description Configuration for API providers.
- */
-export interface ProviderConfig {
-  /** Provider name for display */
-  name?: string;
-  
-  /** Provider type */
-  type: 'openai' | 'anthropic' | 'local';
-  
-  /** Model identifier */
-  model: string;
-  
-  /** API endpoint (optional for some providers) */
-  endpoint?: string;
-  
-  /** Authentication credentials */
-  credentials: {
-    /** API key or token */
-    apiKey?: string;
-    
-    /** Additional authentication parameters */
-    [key: string]: any;
-  };
-  
-  /** Provider-specific settings */
-  settings?: {
-    /** Request timeout in milliseconds */
-    timeout?: number;
-    
-    /** Maximum retry attempts */
-    maxRetries?: number;
-    
-    /** Rate limiting settings */
-    rateLimit?: {
-      requestsPerSecond?: number;
-      tokensPerMinute?: number;
-    };
-    
-    /** Additional provider-specific settings */
-    [key: string]: any;
-  };
-  
-  /** Default generation parameters */
-  defaultParameters?: {
-    temperature?: number;
-    maxTokens?: number;
-    topP?: number;
-    frequencyPenalty?: number;
-    presencePenalty?: number;
-    stop?: string[];
   };
 }
 
@@ -161,7 +106,48 @@ export interface LlmResponse {
   providerData?: any;
 }
 
-
+/**
+ * @interface ProviderConfig
+ * @description Configuration structure for API providers.
+ */
+export interface ProviderConfig {
+  /** Provider type identifier */
+  type: 'openai' | 'anthropic' | 'local' | 'custom';
+  
+  /** API endpoint URL */
+  endpoint?: string;
+  
+  /** Authentication credentials */
+  credentials: {
+    apiKey?: string;
+    token?: string;
+    username?: string;
+    password?: string;
+    [key: string]: string | undefined;
+  };
+  
+  /** Default model to use */
+  model: string;
+  
+  /** Provider-specific settings */
+  settings?: {
+    timeout?: number;
+    maxRetries?: number;
+    retryDelay?: number;
+    rateLimitRpm?: number;
+    rateLimitTpm?: number;
+    [key: string]: any;
+  };
+  
+  /** Default generation parameters */
+  defaultParameters?: {
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+  };
+}
 
 /**
  * @interface ProviderStatus
@@ -190,42 +176,3 @@ export interface ProviderStatus {
     resetTime?: string;
   };
 }
-
-/**
- * @interface ProviderDetails
- * @description Provider information for CLI display.
- */
-export interface ProviderDetails {
-  /** Provider identifier */
-  id: string;
-  
-  /** Display name */
-  name: string;
-  
-  /** Provider type */
-  type: 'openai' | 'anthropic' | 'local';
-  
-  /** Model name */
-  model?: string;
-  
-  /** API endpoint */
-  endpoint?: string;
-  
-  /** Whether provider is active */
-  active: boolean;
-  
-  /** Whether API key is configured */
-  hasKey: boolean;
-  
-  /** Creation timestamp */
-  created_at: string;
-}
-
-// LLM-specific events
-export const LLM_EVENTS = {
-  LLM_REQUEST_STARTED: 'llm:request:started',
-  LLM_REQUEST_COMPLETED: 'llm:request:completed',
-  LLM_REQUEST_FAILED: 'llm:request:failed',
-  PROVIDER_REGISTERED: 'llm:provider:registered',
-  PROVIDER_UNREGISTERED: 'llm:provider:unregistered',
-} as const;

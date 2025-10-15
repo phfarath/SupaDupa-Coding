@@ -94,10 +94,10 @@ export class sdMemoryRepository {
       sql += ` ORDER BY updated_at DESC LIMIT ?`;
       params.push(limit);
 
-      const results = await this.db.all<MemoryRecordDTO>(sql, params);
+      const results = await this.db.all<any>(sql, params);
       
       // Parse the stored JSON data
-      return results.map(record => ({
+      return (results || []).map(record => ({
         ...record,
         data: JSON.parse(record.data as unknown as string),
         metadata: JSON.parse(record.metadata as unknown as string),
@@ -156,12 +156,12 @@ export class sdMemoryRepository {
             
             // Only include if similarity is above threshold
             if (similarity > 0.1) { // threshold can be adjusted
+              const parsedMetadata = JSON.parse(result.metadata);
               const record: MemoryRecordDTO = {
                 ...result,
                 data: JSON.parse(result.data),
-                metadata: JSON.parse(result.metadata),
                 metadata: { 
-                  ...JSON.parse(result.metadata),
+                  ...parsedMetadata,
                   embeddingVector: storedVector
                 }
               };

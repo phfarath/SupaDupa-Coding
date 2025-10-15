@@ -5,8 +5,12 @@ import fs from 'fs/promises';
 import path from 'path';
 import { LLMClient } from '../api/llm-client';
 import { getModelsForProvider, recommendModel } from '../api/model-detector';
+import { UnifiedConfigManager } from '../core/unified-config-manager';
+import { UnifiedConfig } from '../shared/unified-config';
 
-interface ProviderConfig {
+// Using UnifiedConfig from shared/unified-config.ts
+// Legacy interfaces for backward compatibility during migration
+interface LegacyProviderConfig {
   name: string;
   displayName: string;
   apiKey: string;
@@ -15,23 +19,60 @@ interface ProviderConfig {
   enabled: boolean;
 }
 
-interface AgentProviderMapping {
+interface LegacyAgentMapping {
   agentName: string;
   providerName: string;
   model: string;
 }
 
-interface SetupConfig {
-  providers: ProviderConfig[];
-  agentMappings: AgentProviderMapping[];
+interface LegacySetupConfig {
+  providers: LegacyProviderConfig[];
+  agentMappings: LegacyAgentMapping[];
   defaultProvider?: string;
 }
 
 const AVAILABLE_PROVIDERS = [
-  { name: 'openai', displayName: 'OpenAI (GPT-4, GPT-3.5)', models: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
-  { name: 'anthropic', displayName: 'Anthropic (Claude)', models: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'] },
-  { name: 'google', displayName: 'Google (Gemini)', models: ['gemini-pro', 'gemini-ultra'] },
-  { name: 'ollama', displayName: 'Ollama (Local)', models: ['llama2', 'mistral', 'codellama'], isLocal: true },
+  { 
+    name: 'openai', 
+    displayName: 'OpenAI (GPT-4o, GPT-4)', 
+    models: [
+      'gpt-4o',           // Latest flagship (recommended)
+      'gpt-4o-mini',      // Faster, cheaper
+      'gpt-4-turbo',      // Previous generation
+      'gpt-3.5-turbo'     // Budget option
+    ] 
+  },
+  { 
+    name: 'anthropic', 
+    displayName: 'Anthropic (Claude 3.5)', 
+    models: [
+      'claude-3-5-sonnet-20241022',  // Latest (recommended)
+      'claude-3-opus-20240229',      // High-performance
+      'claude-3-sonnet-20240229',    // Balanced
+      'claude-3-haiku-20240307'      // Fast, cost-effective
+    ] 
+  },
+  { 
+    name: 'google', 
+    displayName: 'Google (Gemini)', 
+    models: [
+      'gemini-1.5-pro-latest',    // Latest Pro
+      'gemini-1.5-flash-latest',  // Fast, cost-effective
+      'gemini-pro'                // Previous generation
+    ] 
+  },
+  { 
+    name: 'local', 
+    displayName: 'Ollama (Local Models)', 
+    models: [
+      'llama3.1:8b',      // Meta's latest 8B
+      'llama3.1:70b',     // Meta's latest 70B
+      'codellama:7b',     // Code-specialized
+      'mistral:7b',       // Efficient general purpose
+      'qwen2.5:7b'        // Qwen latest
+    ], 
+    isLocal: true 
+  },
 ];
 
 const AVAILABLE_AGENTS = [
@@ -58,9 +99,12 @@ async function runInteractiveSetup() {
   console.clear();
   displayWelcome();
 
-  const configPath = path.join(process.cwd(), '.supadupacode', 'config.json');
-  let config: SetupConfig = await loadConfig(configPath);
-
+  const configManager = new UnifiedConfigManager();
+  await configManager.initialize();
+  
+  // Try to migrate old configs first
+  await configManager.migrateFromOldConfigs();
+  
   let continueSetup = true;
 
   while (continueSetup) {
@@ -82,19 +126,19 @@ async function runInteractiveSetup() {
 
     switch (action) {
       case 'add-provider':
-        config = await addProvider(config);
+        await addProvider(configManager);
         break;
       case 'configure-agents':
-        config = await configureAgents(config);
+        await configureAgents(configManager);
         break;
       case 'view-config':
-        await viewConfig(config);
+        await viewConfig(configManager);
         break;
       case 'remove-provider':
-        config = await removeProvider(config);
+        await removeProvider(configManager);
         break;
       case 'save-exit':
-        await saveConfig(configPath, config);
+        await configManager.saveConfig();
         console.log(chalk.green('\n✓ Configuração salva com sucesso!'));
         continueSetup = false;
         break;
@@ -110,7 +154,7 @@ async function runInteractiveSetup() {
   }
 }
 
-async function addProvider(config: SetupConfig): Promise<SetupConfig> {
+async function addProvider(configManager: UnifiedConfigManager): Promise<void> {
   console.log(chalk.bold.cyan('\n📡 Adicionar Provider de API\n'));
 
   // Selecionar provider
@@ -215,44 +259,41 @@ async function addProvider(config: SetupConfig): Promise<SetupConfig> {
       type: 'confirm',
       name: 'setAsDefault',
       message: 'Definir como provider padrão?',
-      default: config.providers.length === 0,
+      default: Object.keys(configManager.getProviders()).length === 0,
     },
   ]);
 
-  // Adicionar ou atualizar provider
-  const existingIndex = config.providers.findIndex(p => p.name === providerType);
-  const newProvider: ProviderConfig = {
-    name: providerType,
-    displayName: provider.displayName,
-    apiKey: apiKey || '',
+  // Adicionar ou atualizar provider usando config manager
+  const existingProvider = configManager.getProvider(providerType);
+  const isUpdate = !!existingProvider;
+  
+  await configManager.setProvider(providerType, {
+    type: providerType as any,
     model,
+    apiKey: apiKey || '',
     endpoint,
-    enabled: true,
-  };
+    active: setAsDefault || (!existingProvider && Object.keys(configManager.getProviders()).length === 0)
+  });
 
-  if (existingIndex >= 0) {
-    config.providers[existingIndex] = newProvider;
+  if (isUpdate) {
     console.log(chalk.green(`\n✓ Provider ${provider.displayName} atualizado`));
   } else {
-    config.providers.push(newProvider);
     console.log(chalk.green(`\n✓ Provider ${provider.displayName} adicionado`));
   }
 
   if (setAsDefault) {
-    config.defaultProvider = providerType;
     console.log(chalk.blue(`  → Definido como padrão`));
   }
   
   // Mostrar info do modelo
   console.log(chalk.gray(`  → Modelo: ${model}`));
-
-  return config;
 }
 
-async function configureAgents(config: SetupConfig): Promise<SetupConfig> {
-  if (config.providers.length === 0) {
+async function configureAgents(configManager: UnifiedConfigManager): Promise<void> {
+  const providers = configManager.getProviders();
+  if (Object.keys(providers).length === 0) {
     console.log(chalk.yellow('\n⚠️  Nenhum provider configurado. Adicione um provider primeiro.\n'));
-    return config;
+    return;
   }
 
   console.log(chalk.bold.cyan('\n🤖 Configurar Agentes\n'));
@@ -271,8 +312,6 @@ async function configureAgents(config: SetupConfig): Promise<SetupConfig> {
     },
   ]);
 
-  const newMappings: AgentProviderMapping[] = [];
-
   for (const agentName of selectedAgents) {
     const agent = AVAILABLE_AGENTS.find(a => a.name === agentName)!;
     
@@ -283,15 +322,15 @@ async function configureAgents(config: SetupConfig): Promise<SetupConfig> {
         type: 'list',
         name: 'providerName',
         message: 'Qual provider usar?',
-        choices: config.providers.map(p => ({
-          name: `${p.displayName} (${p.model})`,
-          value: p.name,
+        choices: Object.entries(providers).map(([name, config]) => ({
+          name: `${name} (${config.model})`,
+          value: name,
         })),
-        default: config.defaultProvider,
+        default: configManager.getActiveProvider()?.name || Object.keys(providers)[0],
       },
     ]);
 
-    const selectedProvider = config.providers.find(p => p.name === providerName)!;
+    const selectedProvider = providers[providerName];
 
     const { model } = await inquirer.prompt([
       {
@@ -302,32 +341,33 @@ async function configureAgents(config: SetupConfig): Promise<SetupConfig> {
       },
     ]);
 
-    newMappings.push({
-      agentName,
-      providerName,
+    // Update agent configuration
+    const currentAgent = configManager.getAgent(agentName);
+    await configManager.setAgent(agentName, {
+      ...currentAgent,
+      provider: providerName,
       model,
+      enabled: true
     });
   }
 
-  // Substituir mappings antigos
-  config.agentMappings = newMappings;
-
-  console.log(chalk.green(`\n✓ ${newMappings.length} agente(s) configurado(s)`));
-
-  return config;
+  console.log(chalk.green(`\n✓ ${selectedAgents.length} agente(s) configurado(s)`));
 }
 
-async function viewConfig(config: SetupConfig) {
+async function viewConfig(configManager: UnifiedConfigManager) {
+  const config = configManager.getConfig();
   console.log(chalk.bold.cyan('\n📋 Configuração Atual\n'));
 
-  if (config.providers.length === 0) {
+  const providers = config.providers;
+  if (Object.keys(providers).length === 0) {
     console.log(chalk.yellow('  Nenhum provider configurado\n'));
   } else {
     console.log(chalk.bold('Providers:'));
-    config.providers.forEach(p => {
-      const isDefault = p.name === config.defaultProvider;
-      const defaultLabel = isDefault ? chalk.green(' (padrão)') : '';
-      console.log(`  ${chalk.cyan('•')} ${p.displayName}${defaultLabel}`);
+    Object.entries(providers).forEach(([name, p]) => {
+      const isActive = p.active;
+      const activeLabel = isActive ? chalk.green(' (ativo)') : '';
+      console.log(`  ${chalk.cyan('•')} ${name}${activeLabel}`);
+      console.log(`    Tipo: ${p.type}`);
       console.log(`    Modelo: ${p.model}`);
       console.log(`    API Key: ${p.apiKey ? chalk.green('✓ Configurada') : chalk.red('✗ Não configurada')}`);
       if (p.endpoint) {
@@ -337,16 +377,18 @@ async function viewConfig(config: SetupConfig) {
     });
   }
 
-  if (config.agentMappings.length === 0) {
+  const agents = config.agents;
+  if (Object.keys(agents).length === 0) {
     console.log(chalk.yellow('  Nenhum agente configurado\n'));
   } else {
     console.log(chalk.bold('Agentes:'));
-    config.agentMappings.forEach(m => {
-      const agent = AVAILABLE_AGENTS.find(a => a.name === m.agentName);
-      const provider = config.providers.find(p => p.name === m.providerName);
-      console.log(`  ${chalk.cyan('•')} ${agent?.displayName || m.agentName}`);
-      console.log(`    Provider: ${provider?.displayName || m.providerName}`);
-      console.log(`    Modelo: ${m.model}`);
+    Object.entries(agents).forEach(([name, agent]) => {
+      const agentInfo = AVAILABLE_AGENTS.find(a => a.name === name);
+      const provider = providers[agent.provider];
+      console.log(`  ${chalk.cyan('•')} ${agentInfo?.displayName || name}`);
+      console.log(`    Provider: ${agent.provider}`);
+      console.log(`    Modelo: ${agent.model}`);
+      console.log(`    Status: ${agent.enabled ? chalk.green('Ativo') : chalk.red('Inativo')}`);
       console.log('');
     });
   }
@@ -360,10 +402,11 @@ async function viewConfig(config: SetupConfig) {
   ]);
 }
 
-async function removeProvider(config: SetupConfig): Promise<SetupConfig> {
-  if (config.providers.length === 0) {
-    console.log(chalk.yellow('\n⚠️  Nenhum provider para remover.\n'));
-    return config;
+async function removeProvider(configManager: UnifiedConfigManager): Promise<void> {
+  const providers = configManager.getProviders();
+  if (Object.keys(providers).length === 0) {
+    console.log(chalk.yellow('\n⚠️  Nenhum provider para remover\n'));
+    return;
   }
 
   const { providerName } = await inquirer.prompt([
@@ -371,9 +414,9 @@ async function removeProvider(config: SetupConfig): Promise<SetupConfig> {
       type: 'list',
       name: 'providerName',
       message: 'Qual provider deseja remover?',
-      choices: config.providers.map(p => ({
-        name: p.displayName,
-        value: p.name,
+      choices: Object.entries(providers).map(([name, config]) => ({
+        name: `${name} (${config.model})`,
+        value: name,
       })),
     },
   ]);
@@ -382,44 +425,39 @@ async function removeProvider(config: SetupConfig): Promise<SetupConfig> {
     {
       type: 'confirm',
       name: 'confirm',
-      message: `Tem certeza que deseja remover ${providerName}?`,
+      message: `Tem certeza que deseja remover o provider "${providerName}"?`,
       default: false,
     },
   ]);
 
   if (confirm) {
-    config.providers = config.providers.filter(p => p.name !== providerName);
-    config.agentMappings = config.agentMappings.filter(m => m.providerName !== providerName);
+    await configManager.removeProvider(providerName);
     
-    if (config.defaultProvider === providerName) {
-      config.defaultProvider = config.providers[0]?.name;
+    // Update agents that were using this provider
+    const agents = configManager.getConfig().agents;
+    for (const [agentName, agent] of Object.entries(agents)) {
+      if (agent.provider === providerName) {
+        // Find another provider or disable
+        const otherProviders = Object.keys(providers).filter(p => p !== providerName);
+        if (otherProviders.length > 0) {
+          await configManager.setAgent(agentName, {
+            ...agent,
+            provider: otherProviders[0]
+          });
+        } else {
+          await configManager.setAgent(agentName, {
+            ...agent,
+            enabled: false
+          });
+        }
+      }
     }
-
-    console.log(chalk.green(`\n✓ Provider removido`));
-  } else {
-    console.log(chalk.yellow('\n  Operação cancelada'));
-  }
-
-  return config;
-}
-
-async function loadConfig(configPath: string): Promise<SetupConfig> {
-  try {
-    const data = await fs.readFile(configPath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return {
-      providers: [],
-      agentMappings: [],
-    };
+    
+    console.log(chalk.green(`\n✓ Provider "${providerName}" removido`));
   }
 }
 
-async function saveConfig(configPath: string, config: SetupConfig) {
-  const dir = path.dirname(configPath);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(configPath, JSON.stringify(config, null, 2));
-}
+
 
 function displayWelcome() {
   const banner = `

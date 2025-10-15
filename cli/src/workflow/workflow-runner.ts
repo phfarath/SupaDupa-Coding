@@ -394,8 +394,8 @@ export class sdWorkflowRunner extends EventEmitter {
     const baseTime = 60000; // 1 minute per step
     return steps.reduce((total, step) => {
       const complexity = step.metadata?.complexity || 'medium';
-      const multiplier = complexity === 'simple' ? 0.5 : 
-                        complexity === 'complex' ? 2 : 1;
+      const multiplier = complexity === 'low' ? 0.5 : 
+                        complexity === 'high' ? 2 : 1;
       return total + (baseTime * multiplier);
     }, 0);
   }

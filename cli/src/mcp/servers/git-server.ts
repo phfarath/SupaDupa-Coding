@@ -175,8 +175,7 @@ export class sdGitServer extends EventEmitter {
         params.scope,
         params.description,
         { 
-          autoStage: params.autoStage !== false,
-          files: params.files,
+          autoStage: params.autoStage !== false
         }
       );
 

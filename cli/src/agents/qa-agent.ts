@@ -2,7 +2,8 @@
  * QA Agent - handles testing and quality assurance tasks
  */
 
-import { BaseAgent, AgentTask } from './base-agent';
+import { sdBaseAgent, AgentTask } from './base-agent';
+import { sdProviderRegistry } from '../api/provider-registry';
 
 interface QAResult {
   status: string;
@@ -15,12 +16,40 @@ interface QAResult {
   };
 }
 
-export class QaAgent extends BaseAgent {
-  constructor(config: any = {}) {
-    super('qa', {
-      ...config,
-      capabilities: ['testing', 'validation', 'quality-assurance']
-    });
+export class QaAgent extends sdBaseAgent {
+  constructor(config: any = {}, providerRegistry?: sdProviderRegistry) {
+    const fullConfig = {
+      id: 'qa',
+      name: 'qa',
+      type: 'qa' as const,
+      capabilities: ['testing', 'validation', 'quality-assurance'],
+      api: config.api || {
+        provider: 'openai',
+        model: 'gpt-4',
+        credentials: {}
+      },
+      tools: config.tools || [],
+      systemPrompt: config.systemPrompt || 'You are a QA agent specializing in testing and quality assurance.',
+      settings: config.settings || {}
+    };
+    super(fullConfig, providerRegistry || new sdProviderRegistry());
+  }
+
+  protected buildUserPrompt(task: AgentTask): string {
+    return `Please help with the following QA task: ${task.description}`;
+  }
+
+  protected processLLMResponse(response: any): any {
+    return {
+      status: 'completed',
+      message: 'QA task completed',
+      artifacts: {
+        testCases: 0,
+        passed: 0,
+        failed: 0,
+        coverage: '0%'
+      }
+    };
   }
 
   async execute(task: AgentTask): Promise<QAResult> {

@@ -64,7 +64,7 @@ export interface Config {
 }
 
 export class ConfigManager {
-  private configPath: string;
+  public configPath: string;
   private config: Config | null;
 
   constructor(configPath: string | null = null) {

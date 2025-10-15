@@ -1,5 +1,4 @@
-
-// shared/constants/api-events.ts
+// cli/shared/constants/api-events.ts
 
 /**
  * @const SD_API_EVENTS

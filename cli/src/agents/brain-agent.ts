@@ -1,7 +1,10 @@
 import { BaseAgent, AgentConfig, AgentTask } from './base-agent';
 import { SessionManager } from '../core/session-manager';
 import { ProgressUI } from '../ui/progress-ui';
-import { LLMClient } from '../api/llm-client';
+import { sdProviderRegistry } from '../api/provider-registry';
+import { sdOpenAIProvider } from '../api/providers/openai-provider';
+import { sdAnthropicProvider } from '../api/providers/anthropic-provider';
+import { sdLocalProvider } from '../api/providers/local-provider';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -50,7 +53,7 @@ export class BrainAgent extends BaseAgent {
   private sessionManager: SessionManager;
   private activeAgents: Set<string>;
   private conversationHistory: Array<{ role: string; content: string }> = [];
-  private llmClient: LLMClient;
+  private providerRegistry: sdProviderRegistry;
   private useLLM: boolean = true; // Toggle para usar LLM ou fallback
 
   constructor(config: { name: string; sessionManager: SessionManager; activeAgents: string[] }) {
@@ -61,7 +64,46 @@ export class BrainAgent extends BaseAgent {
     });
     this.sessionManager = config.sessionManager;
     this.activeAgents = new Set(config.activeAgents);
-    this.llmClient = new LLMClient();
+    this.providerRegistry = new sdProviderRegistry();
+  }
+
+  /**
+   * Initialize the brain agent and load providers
+   */
+  async initialize(): Promise<void> {
+    await this.providerRegistry.initialize();
+    await this.initializeProviders();
+  }
+
+  private async initializeProviders() {
+    try {
+      // The provider registry now handles loading from unified config
+      // Just check if we have any providers
+      const providers = this.providerRegistry.list();
+      
+      if (providers.length === 0) {
+        console.warn('No providers configured. Run "supadupacode setup" or "supadupacode provider add" to configure providers.');
+        
+        // Set up default OpenAI provider from environment if available
+        if (process.env.OPENAI_API_KEY) {
+          await this.providerRegistry.register('openai', {
+            name: 'openai',
+            type: 'openai',
+            model: 'gpt-4o',
+            credentials: { apiKey: process.env.OPENAI_API_KEY },
+            settings: { timeout: 30000, maxRetries: 3 }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to initialize providers:', (error as Error).message);
+    }
+  }
+
+  private getProviderType(name: string): 'openai' | 'anthropic' | 'local' {
+    if (name.includes('anthropic')) return 'anthropic';
+    if (name.includes('local')) return 'local';
+    return 'openai';
   }
 
   async execute(task: AgentTask): Promise<any> {
@@ -177,26 +219,55 @@ export class BrainAgent extends BaseAgent {
     // Carregar system prompt
     const systemPrompt = await this.loadSystemPrompt();
     
-    // Fazer chamada ao LLM
-    const response = await this.llmClient.call(
-      'brain',
-      [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
+    // Get active provider
+    const activeProviders = this.providerRegistry.list();
+    if (activeProviders.length === 0) {
+      throw new Error('No AI providers configured. Please run: supadupacode provider add <provider> --key=<api-key>');
+    }
+
+    // Try to find an active provider, or use the first available
+    let providerId = activeProviders[0];
+    const provider = this.providerRegistry.get(providerId);
+    if (!provider) {
+      throw new Error(`Provider ${providerId} not found`);
+    }
+
+    // Ensure provider is activated
+    try {
+      await provider.activate();
+    } catch (error) {
+      console.warn(`Failed to activate provider ${providerId}:`, (error as Error).message);
+    }
+
+    // Fazer chamada ao LLM usando novo sistema
+    const llmRequest = {
+      messages: [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: prompt }
       ],
-      {
-        responseFormat: 'json',
+      parameters: {
         temperature: 0.3, // Mais determinístico para análise
         maxTokens: 500
       }
-    );
+    };
+
+    const response = await this.providerRegistry.execute(providerId, llmRequest);
 
     // Parse da resposta JSON
     let analysis: any;
     try {
-      analysis = JSON.parse(response.content);
+      // Clean the response - remove any markdown code blocks
+      let cleanContent = response.content.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/```json\n?/, '').replace(/\n?```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/```\n?/, '').replace(/\n?```$/, '');
+      }
+      
+      analysis = JSON.parse(cleanContent);
     } catch (error) {
-      throw new Error(`Failed to parse LLM response as JSON: ${response.content}`);
+      console.debug('Raw LLM response:', response.content);
+      throw new Error(`Failed to parse LLM response as JSON. Response was: "${response.content}"`);
     }
 
     // Se for conversa casual, lançar exceção
@@ -226,21 +297,13 @@ export class BrainAgent extends BaseAgent {
     // Análise simples baseada em keywords (fallback)
     const promptLower = prompt.toLowerCase();
     
-    // Detectar conversas casuais
-    const casualIndicators = [
-      'ola', 'olá', 'oi', 'hello', 'hi', 'hey',
-      'bom dia', 'boa tarde', 'boa noite',
-      'tudo bem', 'como vai', 'e ai',
-      'obrigado', 'valeu', 'thanks',
-      'ok', 'entendi', 'certo', 'sim', 'não',
-      'quem é você', 'o que você faz', 'pode me ajudar'
-    ];
+    // Simple heuristic for casual conversation vs task
+    const words = prompt.split(' ').length;
+    const hasQuestionWords = /\b(what|how|why|when|where|who|qual|como|por que|onde|quando|quem)\b/i.test(prompt);
+    const hasTaskWords = /\b(create|implement|build|add|fix|correct|criar|implementar|construir|adicionar|corrigir|desenvolver)\b/i.test(prompt);
     
-    const isCasual = casualIndicators.some(indicator => 
-      promptLower.includes(indicator) && prompt.split(' ').length <= 5
-    );
-    
-    if (isCasual) {
+    // If it's short and doesn't contain task words, treat as casual
+    if (words <= 5 && !hasTaskWords) {
       throw new CasualConversationResponse(this.generateCasualResponse(prompt));
     }
     

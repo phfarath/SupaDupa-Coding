@@ -173,17 +173,17 @@ Brain: {
 
 ## Formato de Resposta
 
-**IMPORTANTE**: Você DEVE responder APENAS com JSON válido. Não adicione texto antes ou depois do JSON.
+**CRITICAL**: You MUST respond with ONLY valid JSON. No markdown, no explanations, no text before or after the JSON. The entire response must be a single JSON object.
 
-### Para Conversas Casuais:
+### For Casual Conversations:
 ```json
 {
   "type": "chat",
-  "message": "Sua resposta amigável aqui"
+  "message": "Your friendly response here"
 }
 ```
 
-### Para Tarefas Técnicas:
+### For Technical Tasks:
 ```json
 {
   "type": "task",
@@ -191,12 +191,17 @@ Brain: {
   "complexity": "low|medium|high",
   "mode": "sequential|parallel",
   "agents": ["planner", "developer", "qa"],
-  "description": "Descrição clara da tarefa",
+  "description": "Clear description of the task",
   "estimatedDuration": 180000
 }
 ```
 
-**Nota**: Não inclua o campo `steps` na resposta. Apenas `type`, `intent`, `complexity`, `mode`, `agents`, `description` e `estimatedDuration`.
+**IMPORTANT**: 
+- Do NOT include the `steps` field in your response
+- Do NOT wrap JSON in markdown code blocks
+- Do NOT add any text before or after the JSON
+- The entire response must be valid JSON that can be parsed directly
+- If you're unsure, always default to "chat" type for simple questions
 
 ## Exemplos Completos
 

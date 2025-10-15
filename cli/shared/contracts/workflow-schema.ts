@@ -19,6 +19,8 @@ export interface WorkflowStepDTO {
     duration?: number;
     retryCount?: number;
     artifacts?: string[];
+    complexity?: 'low' | 'medium' | 'high';
+    estimatedDuration?: number;
   };
 }
 

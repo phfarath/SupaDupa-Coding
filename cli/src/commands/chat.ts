@@ -38,9 +38,9 @@ async function runChatSession(options: ChatOptions) {
   });
 
   // Carregar ou criar sessão
-  const spinner = ora('Inicializando sessão...').start();
+  const sessionSpinner = ora('Inicializando sessão...').start();
   await sessionManager.initialize();
-  spinner.succeed('Sessão inicializada');
+  sessionSpinner.succeed('Sessão inicializada');
 
   // Selecionar agentes ativos
   const activeAgents = await selectActiveAgents(options.agents);
@@ -52,6 +52,11 @@ async function runChatSession(options: ChatOptions) {
     sessionManager,
     activeAgents,
   });
+  
+  // Initialize the brain agent to load providers
+  const brainSpinner = ora('Inicializando Brain Agent...').start();
+  await brainAgent.initialize();
+  brainSpinner.succeed('Brain Agent inicializado');
 
   const progressUI = new ProgressUI();
 

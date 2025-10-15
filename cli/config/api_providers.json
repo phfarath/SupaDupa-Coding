@@ -1,22 +1,54 @@
 {
-  "description": "API Provider Configuration Template",
+  "description": "API Provider Configuration Template - Updated October 2024",
   "active": null,
   "registered": {
     "openai": {
       "name": "openai",
       "encrypted_key": "ENCRYPTED_KEY_HERE",
-      "model": "gpt-4",
+      "model": "gpt-4o",
       "endpoint": null,
       "created_at": "2024-01-01T00:00:00.000Z",
-      "updated_at": "2024-01-01T00:00:00.000Z"
+      "updated_at": "2024-10-15T00:00:00.000Z"
+    },
+    "openai-mini": {
+      "name": "openai-mini",
+      "encrypted_key": "ENCRYPTED_KEY_HERE",
+      "model": "gpt-4o-mini",
+      "endpoint": null,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-10-15T00:00:00.000Z"
     },
     "anthropic": {
       "name": "anthropic",
       "encrypted_key": "ENCRYPTED_KEY_HERE",
+      "model": "claude-3-5-sonnet-20241022",
+      "endpoint": null,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-10-15T00:00:00.000Z"
+    },
+    "anthropic-opus": {
+      "name": "anthropic-opus",
+      "encrypted_key": "ENCRYPTED_KEY_HERE",
       "model": "claude-3-opus-20240229",
       "endpoint": null,
       "created_at": "2024-01-01T00:00:00.000Z",
-      "updated_at": "2024-01-01T00:00:00.000Z"
+      "updated_at": "2024-10-15T00:00:00.000Z"
+    },
+    "local-llama": {
+      "name": "local-llama",
+      "encrypted_key": "",
+      "model": "llama3.1:8b",
+      "endpoint": "http://localhost:11434",
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-10-15T00:00:00.000Z"
+    },
+    "local-codellama": {
+      "name": "local-codellama",
+      "encrypted_key": "",
+      "model": "codellama:7b",
+      "endpoint": "http://localhost:11434",
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-10-15T00:00:00.000Z"
     }
   }
 }

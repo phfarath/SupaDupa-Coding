@@ -3,7 +3,9 @@
  */
 
 import chalk from 'chalk';
-import { ProviderRegistry } from '../core/provider-registry';
+import path from 'path';
+import { sdProviderRegistry } from '../api/provider-registry';
+import { ProviderDetails } from '../../shared/contracts/llm-contracts';
 import { logger } from '../utils/logger';
 
 interface ProviderCommandOptions {
@@ -14,15 +16,7 @@ interface ProviderCommandOptions {
   [key: string]: any;
 }
 
-interface ProviderDetails {
-  name: string;
-  active: boolean;
-  hasKey: boolean;
-  model?: string;
-  endpoint?: string;
-  created_at: string;
-  updated_at: string;
-}
+
 
 interface AddProviderOptions {
   model?: string;
@@ -38,7 +32,11 @@ interface UpdateProviderOptions {
 
 export async function providerCommand(action?: string, name?: string, options: ProviderCommandOptions = {}) {
   try {
-    const registry = new ProviderRegistry();
+    const configPath = path.join(process.cwd(), '.supadupacode.json');
+    const registry = new sdProviderRegistry(configPath);
+    
+    // Initialize the registry to load existing providers
+    await registry.initialize();
 
     if (!action) {
       action = 'list';
@@ -81,7 +79,7 @@ export async function providerCommand(action?: string, name?: string, options: P
   }
 }
 
-async function handleAdd(registry: ProviderRegistry, name: string | undefined, options: ProviderCommandOptions) {
+async function handleAdd(registry: sdProviderRegistry, name: string | undefined, options: ProviderCommandOptions) {
   if (!name) {
     throw new Error('Provider name is required. Usage: provider add <name> --key <api-key>');
   }
@@ -101,15 +99,24 @@ async function handleAdd(registry: ProviderRegistry, name: string | undefined, o
     console.log(chalk.bold('Endpoint:'), options.endpoint);
   }
 
-  const result = await registry.addProvider(name, options.key, {
-    model: options.model,
+  const providerConfig = {
+    name,
+    type: 'openai' as const, // Default type, should be determined from options
+    model: options.model || 'gpt-4',
     endpoint: options.endpoint,
-    setActive: options.setActive
-  } as AddProviderOptions);
+    credentials: { apiKey: options.key },
+    settings: {
+      timeout: 30000,
+      maxRetries: 3
+    }
+  };
+
+  await registry.addProvider(providerConfig);
 
   console.log(chalk.green('\n✓'), `Provider '${name}' added successfully`);
   
-  if (result.active) {
+  if (options.setActive) {
+    await registry.switchProvider(name);
     console.log(chalk.green('✓'), `Set as active provider`);
   }
   
@@ -119,7 +126,7 @@ async function handleAdd(registry: ProviderRegistry, name: string | undefined, o
   logger.info('Provider added', { name, model: options.model });
 }
 
-async function handleList(registry: ProviderRegistry) {
+async function handleList(registry: sdProviderRegistry) {
   console.log(chalk.bold.cyan('Registered API Providers'));
   console.log(chalk.gray('─'.repeat(50)));
 
@@ -150,7 +157,7 @@ async function handleList(registry: ProviderRegistry) {
   console.log();
 }
 
-async function handleSwitch(registry: ProviderRegistry, name: string | undefined) {
+async function handleSwitch(registry: sdProviderRegistry, name: string | undefined) {
   if (!name) {
     throw new Error('Provider name is required. Usage: provider switch <name>');
   }
@@ -166,7 +173,7 @@ async function handleSwitch(registry: ProviderRegistry, name: string | undefined
   logger.info('Provider switched', { name });
 }
 
-async function handleRemove(registry: ProviderRegistry, name: string | undefined) {
+async function handleRemove(registry: sdProviderRegistry, name: string | undefined) {
   if (!name) {
     throw new Error('Provider name is required. Usage: provider remove <name>');
   }
@@ -182,7 +189,7 @@ async function handleRemove(registry: ProviderRegistry, name: string | undefined
   logger.info('Provider removed', { name });
 }
 
-async function handleShow(registry: ProviderRegistry, name: string | undefined) {
+async function handleShow(registry: sdProviderRegistry, name: string | undefined) {
   if (!name) {
     throw new Error('Provider name is required. Usage: provider show <name>');
   }
@@ -190,7 +197,24 @@ async function handleShow(registry: ProviderRegistry, name: string | undefined) 
   console.log(chalk.bold.cyan('Provider Details'));
   console.log(chalk.gray('─'.repeat(50)));
 
-  const provider: ProviderDetails = await registry.getProvider(name, false);
+  const providerAdapter = registry.get(name);
+  if (!providerAdapter) {
+    throw new Error(`Provider "${name}" not found`);
+  }
+  
+  const config = registry.getConfig(name);
+  const status = await providerAdapter.getStatus();
+  
+  const provider: ProviderDetails = {
+    id: name,
+    name: config?.name || name,
+    type: config?.type || 'openai',
+    model: config?.model,
+    endpoint: config?.endpoint,
+    active: status.status === 'online',
+    hasKey: !!(config?.credentials && (config.credentials as any).apiKey),
+    created_at: new Date().toISOString()
+  };
 
   console.log(chalk.bold('Name:'), provider.name);
   console.log(chalk.bold('Active:'), provider.active ? chalk.green('Yes') : chalk.gray('No'));
@@ -203,12 +227,11 @@ async function handleShow(registry: ProviderRegistry, name: string | undefined) 
   }
   
   console.log(chalk.bold('Created:'), new Date(provider.created_at).toLocaleString());
-  console.log(chalk.bold('Updated:'), new Date(provider.updated_at).toLocaleString());
   
   console.log(chalk.blue('\nℹ'), 'API key is encrypted and not displayed');
 }
 
-async function handleUpdate(registry: ProviderRegistry, name: string | undefined, options: ProviderCommandOptions) {
+async function handleUpdate(registry: sdProviderRegistry, name: string | undefined, options: ProviderCommandOptions) {
   if (!name) {
     throw new Error('Provider name is required. Usage: provider update <name> [options]');
   }

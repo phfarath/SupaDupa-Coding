@@ -12,6 +12,7 @@ export interface MemoryRecordDTO {
     embeddingVector?: number[];
     tags: string[];
     timestamp: string;
+    [key: string]: any; // Allow additional properties like 'archived', 'archivedAt'
   };
 }
 

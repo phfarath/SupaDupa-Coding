@@ -1,4 +1,4 @@
-﻿import { EventEmitter } from 'events';
+import { EventEmitter } from 'events';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';

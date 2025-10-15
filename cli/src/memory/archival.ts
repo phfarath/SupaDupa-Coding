@@ -20,6 +20,12 @@ interface ArchiveRecord {
   archivedAt: string;
   originalSize: number;
   compressedSize: number;
+  metadata?: {
+    agentOrigin: string;
+    embeddingVector?: number[];
+    tags: string[];
+    timestamp: string;
+  };
 }
 
 /**
@@ -129,6 +135,9 @@ export class MemoryArchivalService {
             data: record.data,
             metadata: {
               agentOrigin: record.agentOrigin,
+              tags: record.metadata?.tags || [],
+              timestamp: record.metadata?.timestamp || new Date().toISOString(),
+              embeddingVector: record.metadata?.embeddingVector,
               archived: true,
               archivedAt: record.archivedAt
             }

@@ -1,4 +1,4 @@
-﻿import { EventEmitter } from 'events';
+import { EventEmitter } from 'events';
 import { PlannerPlanDTO } from '../../../shared/contracts/plan-schema';
 
 export interface PlannerQueueItemMetadata {
