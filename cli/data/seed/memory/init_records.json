@@ -1,0 +1,44 @@
+{
+  "records": [
+    {
+      "id": "init-record-001",
+      "key": "default-context",
+      "category": "context",
+      "data": {
+        "projectType": "javascript",
+        "framework": "none",
+        "dependencies": [],
+        "config": {}
+      },
+      "metadata": {
+        "agentOrigin": "system",
+        "tags": ["initial", "context"],
+        "timestamp": "2025-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "id": "init-record-002",
+      "key": "common-solution-patterns",
+      "category": "solutions",
+      "data": {
+        "patterns": [
+          {
+            "name": "error-handling",
+            "description": "Standard error handling approach",
+            "implementation": "// TODO: Implement standard error handling"
+          },
+          {
+            "name": "logging",
+            "description": "Standard logging approach",
+            "implementation": "// TODO: Implement standard logging"
+          }
+        ]
+      },
+      "metadata": {
+        "agentOrigin": "system",
+        "tags": ["initial", "solutions", "patterns"],
+        "timestamp": "2025-01-01T00:00:00.000Z"
+      }
+    }
+  ]
+}

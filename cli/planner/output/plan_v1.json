@@ -1,0 +1,176 @@
+﻿{
+  "planId": "plan_1739484000000_demo",
+  "description": "Implement user profile editing workflow",
+  "steps": [
+    {
+      "id": "step_analysis_2f3c9a1b",
+      "name": "Scope & Requirements Review",
+      "type": "analysis",
+      "agent": "planner",
+      "description": "Clarify business goals, constraints, and success metrics for \"Implement user profile editing workflow\"",
+      "dependencies": [],
+      "expectedOutputs": [
+        "docs/requirements/plan_1739484000000_demo-requirements.md",
+        "docs/constraints/plan_1739484000000_demo-constraints.json"
+      ],
+      "estimatedDuration": 56,
+      "metadata": {
+        "complexity": "complex",
+        "risk": "high",
+        "requiredSkills": [
+          "stakeholder-analysis",
+          "risk-profiling",
+          "react",
+          "node-js"
+        ],
+        "prerequisites": []
+      }
+    },
+    {
+      "id": "step_design_7d8e2f4c",
+      "name": "Solution Design Blueprint",
+      "type": "design",
+      "agent": "planner",
+      "description": "Design the solution approach that satisfies the validated requirements for \"Implement user profile editing workflow\"",
+      "dependencies": [
+        "step_analysis_2f3c9a1b"
+      ],
+      "expectedOutputs": [
+        "docs/design/plan_1739484000000_demo-architecture.md",
+        "backlog/plan_1739484000000_demo-work-breakdown.json"
+      ],
+      "estimatedDuration": 75,
+      "metadata": {
+        "complexity": "complex",
+        "risk": "high",
+        "requiredSkills": [
+          "system-design",
+          "tradeoff-analysis",
+          "react",
+          "node-js"
+        ],
+        "prerequisites": [
+          "Approval of step_analysis_2f3c9a1b"
+        ]
+      }
+    },
+    {
+      "id": "step_implementation_1a2b3c4d",
+      "name": "Implementation Strategy",
+      "type": "implementation",
+      "agent": "developer",
+      "description": "Translate the blueprint into executable work packages and delivery sequencing for \"Implement user profile editing workflow\"",
+      "dependencies": [
+        "step_design_7d8e2f4c"
+      ],
+      "expectedOutputs": [
+        "delivery/plan_1739484000000_demo-implementation-plan.md",
+        "delivery/plan_1739484000000_demo-task-matrix.json"
+      ],
+      "estimatedDuration": 150,
+      "metadata": {
+        "complexity": "complex",
+        "risk": "high",
+        "requiredSkills": [
+          "typescript",
+          "automation",
+          "integration",
+          "react",
+          "node-js"
+        ],
+        "prerequisites": [
+          "Design artifacts from step_design_7d8e2f4c"
+        ]
+      }
+    },
+    {
+      "id": "step_qa_5e6f7g8h",
+      "name": "Validation & QA Strategy",
+      "type": "quality-assurance",
+      "agent": "qa",
+      "description": "Define quality strategy, test coverage, and validation checkpoints for \"Implement user profile editing workflow\"",
+      "dependencies": [
+        "step_implementation_1a2b3c4d"
+      ],
+      "expectedOutputs": [
+        "quality/plan_1739484000000_demo-qa-strategy.md",
+        "quality/plan_1739484000000_demo-test-catalog.json"
+      ],
+      "estimatedDuration": 75,
+      "metadata": {
+        "complexity": "complex",
+        "risk": "high",
+        "requiredSkills": [
+          "test-automation",
+          "metrics-definition"
+        ],
+        "prerequisites": [
+          "Implementation strategy step_implementation_1a2b3c4d"
+        ]
+      }
+    },
+    {
+      "id": "step_signoff_9h0j1k2l",
+      "name": "Plan Review & Sign-off",
+      "type": "governance",
+      "agent": "planner",
+      "description": "Facilitate review and sign-off for plan \"plan_1739484000000_demo\" with stakeholders",
+      "dependencies": [
+        "step_qa_5e6f7g8h"
+      ],
+      "expectedOutputs": [
+        "governance/plan_1739484000000_demo-signoff-report.md"
+      ],
+      "estimatedDuration": 38,
+      "metadata": {
+        "complexity": "medium",
+        "risk": "low",
+        "requiredSkills": [
+          "facilitation",
+          "risk-management"
+        ],
+        "prerequisites": [
+          "QA strategy approved"
+        ]
+      }
+    }
+  ],
+  "artifacts": [
+    "docs/requirements/plan_1739484000000_demo-requirements.md",
+    "docs/constraints/plan_1739484000000_demo-constraints.json",
+    "docs/design/plan_1739484000000_demo-architecture.md",
+    "backlog/plan_1739484000000_demo-work-breakdown.json",
+    "delivery/plan_1739484000000_demo-implementation-plan.md",
+    "delivery/plan_1739484000000_demo-task-matrix.json",
+    "quality/plan_1739484000000_demo-qa-strategy.md",
+    "quality/plan_1739484000000_demo-test-catalog.json",
+    "governance/plan_1739484000000_demo-signoff-report.md",
+    "docs/requirements/user-profile.md",
+    "planner/output/plan_v1.json",
+    "planner/output/plan_1739484000000_demo.json"
+  ],
+  "metadata": {
+    "createdAt": "2025-10-13T22:00:00.000Z",
+    "estimatedDuration": 394,
+    "dependencies": [
+      "step_analysis_2f3c9a1b",
+      "step_design_7d8e2f4c",
+      "step_implementation_1a2b3c4d",
+      "step_qa_5e6f7g8h"
+    ],
+    "priority": "high",
+    "tags": [
+      "sd-planner",
+      "analysis",
+      "design",
+      "implementation",
+      "quality-assurance",
+      "governance",
+      "user-experience",
+      "react",
+      "node-js",
+      "quality-first"
+    ],
+    "version": "1.0.0"
+  }
+}

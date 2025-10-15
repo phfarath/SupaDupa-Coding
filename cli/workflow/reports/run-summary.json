@@ -1,0 +1,145 @@
+{
+  "workflowSummary": {
+    "workflowId": "workflow_1234567890_abcdef12",
+    "planId": "plan_1234567890_abcdef12",
+    "status": "completed",
+    "duration": 4520000,
+    "agents": ["planner", "coder", "qa"],
+    "artifacts": [
+      "planner/output/plan_v1.json",
+      "coder/build/patchset_20231012_143022.diff",
+      "mcp/git/commit_info.json",
+      "qa/reports/test_results.json",
+      "workflow/reports/run-summary.json"
+    ],
+    "checkpoints": [
+      "checkpoint_1697123422000_a1b2c3d4",
+      "checkpoint_1697123428000_e5f6g7h8",
+      "checkpoint_1697123435000_i9j0k1l2"
+    ],
+    "steps": {
+      "total": 5,
+      "completed": 5,
+      "failed": 0
+    },
+    "success": true,
+    "timestamp": "2024-10-14T01:24:00.000Z",
+    "errors": [],
+    "warnings": [
+      "Test coverage slightly below threshold",
+      "Some deprecated APIs used"
+    ],
+    "performance": {
+      "totalExecutionTime": 4520000,
+      "averageStepTime": 904000,
+      "fastestStep": {
+        "stepId": "step_1",
+        "name": "Design auth schema",
+        "duration": 450000
+      },
+      "slowestStep": {
+        "stepId": "step_3",
+        "name": "Implement authentication",
+        "duration": 1800000
+      }
+    },
+    "quality": {
+      "testCoverage": 78.5,
+      "codeQualityScore": 8.2,
+      "securityScore": 9.1,
+      "performanceScore": 7.8
+    },
+    "resources": {
+      "memoryPeak": 256000000,
+      "diskUsage": 52428800,
+      "networkRequests": 45,
+      "apiCalls": 23
+    },
+    "changes": {
+      "filesModified": 12,
+      "linesAdded": 850,
+      "linesRemoved": 125,
+      "commitsCreated": 3,
+      "testsAdded": 25,
+      "testsPassing": 24,
+      "testsFailing": 1
+    },
+    "metadata": {
+      "environment": "development",
+      "nodeVersion": "v20.10.0",
+      "platform": "linux",
+      "architecture": "x64",
+      "totalMemory": 16777216000,
+      "freeMemory": 8388608000
+    },
+    "handoffs": {
+      "planner_to_memory": {
+        "timestamp": "2024-10-14T01:15:00.000Z",
+        "file": "planner/output/plan_v1.json",
+        "success": true
+      },
+      "memory_to_coder": {
+        "timestamp": "2024-10-14T01:16:30.000Z",
+        "file": "memory/cache/search_results.json",
+        "success": true
+      },
+      "coder_to_mcp": {
+        "timestamp": "2024-10-14T01:18:45.000Z",
+        "file": "coder/build/patchset_20231012_143022.diff",
+        "success": true
+      },
+      "mcp_to_qa": {
+        "timestamp": "2024-10-14T01:22:10.000Z",
+        "file": "mcp/git/commit_info.json",
+        "success": true
+      },
+      "qa_to_workflow": {
+        "timestamp": "2024-10-14T01:24:00.000Z",
+        "file": "qa/reports/test_results.json",
+        "success": true
+      }
+    },
+    "events": [
+      {
+        "type": "SD_EVENT_WORKFLOW_STARTED",
+        "timestamp": "2024-10-14T01:15:00.000Z",
+        "data": {
+          "workflowId": "workflow_1234567890_abcdef12",
+          "planId": "plan_1234567890_abcdef12"
+        }
+      },
+      {
+        "type": "SD_EVENT_STEP_COMPLETED",
+        "timestamp": "2024-10-14T01:15:45.000Z",
+        "data": {
+          "stepId": "step_1",
+          "name": "Design auth schema",
+          "duration": 450000
+        }
+      },
+      {
+        "type": "SD_EVENT_CHECKPOINT_CREATED",
+        "timestamp": "2024-10-14T01:17:00.000Z",
+        "data": {
+          "checkpointId": "checkpoint_1697123422000_a1b2c3d4",
+          "stepId": "step_2"
+        }
+      },
+      {
+        "type": "SD_EVENT_WORKFLOW_COMPLETED",
+        "timestamp": "2024-10-14T01:24:00.000Z",
+        "data": {
+          "workflowId": "workflow_1234567890_abcdef12",
+          "success": true
+        }
+      }
+    ],
+    "nextSteps": [
+      "Review test failures and fix issues",
+      "Improve test coverage to meet threshold",
+      "Update deprecated API usage",
+      "Performance optimization for slow steps"
+    ],
+    "summary": "Workflow completed successfully with all 5 steps executed. Authentication system implemented with 78.5% test coverage. 3 commits created with proper standardized messages. QA tests mostly passing with 1 minor failure requiring attention."
+  }
+}
