@@ -4,14 +4,120 @@ This document provides a comprehensive reference for all available commands in t
 
 ## Table of Contents
 
-1. [Agent Management](#agent-management)
-2. [Memory Management](#memory-management)
-3. [API Integration](#api-integration)
-4. [Workflow Management](#workflow-management)
-5. [Monitoring & Observability](#monitoring--observability)
-6. [Debugging & Diagnostics](#debugging--diagnostics)
-7. [Environment & Deployment](#environment--deployment)
-8. [Legacy Commands](#legacy-commands)
+1. [Core Workflow Commands](#core-workflow-commands)
+2. [Agent Management](#agent-management)
+3. [Memory Management](#memory-management)
+4. [API Integration](#api-integration)
+5. [Workflow Management](#workflow-management)
+6. [Configuration](#configuration)
+
+---
+
+## Core Workflow Commands
+
+### `plan <description>`
+Plan and decompose a feature into tasks for parallel execution.
+
+**Usage:**
+```bash
+supadupacode plan <description> [options]
+```
+
+**Options:**
+- `-v, --verbose` - Verbose output
+- `-o, --output <format>` - Output format: json, text (default: text)
+
+**Example:**
+```bash
+supadupacode plan "Add user authentication"
+supadupacode plan "Implement REST API" --output=json
+```
+
+### `run`
+Execute feature development with AI agents.
+
+**Usage:**
+```bash
+supadupacode run [options]
+```
+
+**Options:**
+- `-f, --feature <name>` - Feature name/identifier
+- `-p, --plan <file>` - Plan file to execute
+- `-m, --mode <mode>` - Execution mode: sequential, concurrent, handoff (default: sequential)
+
+**Example:**
+```bash
+supadupacode run --feature=auth-system
+supadupacode run --plan=plan.json --mode=concurrent
+```
+
+### `status`
+Check status of feature development and agent progress.
+
+**Usage:**
+```bash
+supadupacode status [options]
+```
+
+**Options:**
+- `-f, --feature <name>` - Feature name/identifier
+- `-a, --all` - Show all features
+- `-w, --watch` - Watch mode (continuous updates)
+
+**Example:**
+```bash
+supadupacode status --feature=auth-system
+supadupacode status --all --watch
+```
+
+### `review`
+Review pull request with automated feedback.
+
+**Usage:**
+```bash
+supadupacode review [options]
+```
+
+**Options:**
+- `--pr <number>` - Pull request number
+- `--auto-approve` - Automatically approve if checks pass
+
+**Example:**
+```bash
+supadupacode review --pr=123
+supadupacode review --pr=123 --auto-approve
+```
+
+### `fix`
+Fix issues in pull request automatically.
+
+**Usage:**
+```bash
+supadupacode fix [options]
+```
+
+**Options:**
+- `--pr <number>` - Pull request number
+- `--check <name>` - Specific check to fix
+- `--auto-commit` - Automatically commit fixes
+
+**Example:**
+```bash
+supadupacode fix --pr=123
+supadupacode fix --pr=123 --check=lint --auto-commit
+```
+
+### `chat`
+Interactive conversational mode for multi-agent orchestration.
+
+**Usage:**
+```bash
+supadupacode chat
+```
+
+**Description:**
+Starts an interactive chat session where you can orchestrate multi-agent workflows conversationally. The chat mode provides real-time collaboration with AI agents.
 
 ---
 
@@ -243,6 +349,35 @@ supadupacode auth verify --provider=<name>
 supadupacode auth verify --provider=openai
 ```
 
+### `provider`
+Manage API providers (add, list, switch, remove, show, update).
+
+**Usage:**
+```bash
+supadupacode provider [action] [name] [options]
+```
+
+**Actions:**
+- `add` - Add a new provider
+- `list` - List all providers (default)
+- `switch` - Switch active provider
+- `remove` - Remove a provider
+- `show` - Show provider details
+- `update` - Update provider configuration
+
+**Options:**
+- `-k, --key <key>` - API key
+- `-m, --model <model>` - Model name (e.g., gpt-4, claude-3)
+- `-e, --endpoint <url>` - API endpoint URL
+- `--set-active` - Set as active provider
+
+**Example:**
+```bash
+supadupacode provider list
+supadupacode provider add openai --key=sk-xxx --model=gpt-4
+supadupacode provider switch anthropic
+```
+
 ---
 
 ## Workflow Management
@@ -314,307 +449,7 @@ supadupacode workflow logs workflow-123
 
 ---
 
-## Monitoring & Observability
-
-### `metrics collect`
-Collect system performance metrics.
-
-**Usage:**
-```bash
-supadupacode metrics collect [options]
-```
-
-**Options:**
-- `--format <format>` - Output format: json, prometheus (default: json)
-- `--interval <seconds>` - Collection interval (default: 60)
-
-**Example:**
-```bash
-supadupacode metrics collect --format=json
-supadupacode metrics collect --format=prometheus --interval=30
-```
-
-### `metrics show`
-Display current system metrics.
-
-**Usage:**
-```bash
-supadupacode metrics show
-```
-
-### `logs query`
-Query and filter system logs.
-
-**Usage:**
-```bash
-supadupacode logs query [options]
-```
-
-**Options:**
-- `--agent <name>` - Filter by agent
-- `--severity <level>` - Filter by severity: info, warn, error
-- `--since <time>` - Filter by time
-
-**Example:**
-```bash
-supadupacode logs query --agent=planner --severity=error
-supadupacode logs query --since="2024-01-01" --agent=developer
-```
-
-### `logs export`
-Export logs to a file.
-
-**Usage:**
-```bash
-supadupacode logs export [options]
-```
-
-**Options:**
-- `--format <format>` - Export format (default: json)
-- `--output <file>` - Output file path
-
-**Example:**
-```bash
-supadupacode logs export --format=json --output=logs-export.json
-```
-
-### `alert configure <name>`
-Configure a monitoring alert.
-
-**Usage:**
-```bash
-supadupacode alert configure <name> [options]
-```
-
-**Options:**
-- `--metric <metric>` - Metric to monitor (required)
-- `--threshold <value>` - Alert threshold (required)
-- `--channel <channel>` - Notification channel: console, slack, email, webhook (default: console)
-
-**Example:**
-```bash
-supadupacode alert configure high-latency --metric=api.latency --threshold=1000 --channel=slack
-supadupacode alert configure agent-failure --metric=agent.status --threshold=0 --channel=email
-```
-
-### `alert list`
-List all configured alerts.
-
-**Usage:**
-```bash
-supadupacode alert list
-```
-
----
-
-## Debugging & Diagnostics
-
-### `debug trace`
-Start detailed event tracing.
-
-**Usage:**
-```bash
-supadupacode debug trace [options]
-```
-
-**Options:**
-- `--agent <name>` - Agent to trace
-- `--duration <seconds>` - Trace duration (default: 60)
-
-**Example:**
-```bash
-supadupacode debug trace --agent=planner --duration=120
-```
-
-### `debug inspect`
-Inspect system components.
-
-**Usage:**
-```bash
-supadupacode debug inspect [options]
-```
-
-**Options:**
-- `--component <name>` - Component to inspect (default: system)
-
-**Example:**
-```bash
-supadupacode debug inspect --component=orchestrator
-```
-
-### `health`
-Perform comprehensive system health check.
-
-**Usage:**
-```bash
-supadupacode health
-```
-
-**Checks:**
-- Configuration integrity
-- API connectivity
-- Memory system status
-- Agent availability
-- Resource usage
-
----
-
-## Environment & Deployment
-
-### `env setup`
-Setup an execution environment.
-
-**Usage:**
-```bash
-supadupacode env setup [options]
-```
-
-**Options:**
-- `--env <environment>` - Environment: development, staging, production (default: development)
-
-**Example:**
-```bash
-supadupacode env setup --env=production
-```
-
-### `env list`
-List available environments.
-
-**Usage:**
-```bash
-supadupacode env list
-```
-
-### `deploy`
-Deploy application to an environment.
-
-**Usage:**
-```bash
-supadupacode deploy [options]
-```
-
-**Options:**
-- `--env <environment>` - Target environment (default: production)
-- `--incremental` - Use incremental deployment
-
-**Example:**
-```bash
-supadupacode deploy --env=production
-supadupacode deploy --env=staging --incremental
-```
-
-### `rollback`
-Rollback to a previous version.
-
-**Usage:**
-```bash
-supadupacode rollback --version=<version>
-```
-
-**Example:**
-```bash
-supadupacode rollback --version=0.9.0
-```
-
-### `version`
-Show version information.
-
-**Usage:**
-```bash
-supadupacode version [options]
-```
-
-**Options:**
-- `--action <action>` - Action: show, list (default: show)
-
-**Example:**
-```bash
-supadupacode version
-supadupacode version --action=list
-```
-
-### `validate`
-Validate system configuration.
-
-**Usage:**
-```bash
-supadupacode validate
-```
-
-**Validates:**
-- Configuration file
-- Agent configuration
-- API credentials
-- Git settings
-- Memory settings
-- Network connectivity
-
----
-
-## Legacy Commands
-
-### `plan <description>`
-Plan and decompose a feature into tasks.
-
-**Usage:**
-```bash
-supadupacode plan <description> [options]
-```
-
-**Options:**
-- `-v, --verbose` - Verbose output
-- `-o, --output <format>` - Output format: json, text (default: text)
-
-### `run`
-Execute feature development with AI agents.
-
-**Usage:**
-```bash
-supadupacode run [options]
-```
-
-**Options:**
-- `-f, --feature <name>` - Feature name/identifier
-- `-p, --plan <file>` - Plan file to execute
-- `-m, --mode <mode>` - Execution mode: sequential, concurrent, handoff (default: sequential)
-
-### `status`
-Check status of feature development.
-
-**Usage:**
-```bash
-supadupacode status [options]
-```
-
-**Options:**
-- `-f, --feature <name>` - Feature name/identifier
-- `-a, --all` - Show all features
-- `-w, --watch` - Watch mode (continuous updates)
-
-### `review`
-Review pull request.
-
-**Usage:**
-```bash
-supadupacode review [options]
-```
-
-**Options:**
-- `--pr <number>` - Pull request number
-- `--auto-approve` - Automatically approve if checks pass
-
-### `fix`
-Fix issues in pull request.
-
-**Usage:**
-```bash
-supadupacode fix [options]
-```
-
-**Options:**
-- `--pr <number>` - Pull request number
-- `--check <name>` - Specific check to fix
-- `--auto-commit` - Automatically commit fixes
+## Configuration
 
 ### `config`
 Manage CLI configuration.
@@ -629,6 +464,40 @@ supadupacode config [action] [key] [value]
 - `show` - Show configuration
 - `set` - Set configuration value
 - `reset` - Reset to defaults
+
+**Example:**
+```bash
+supadupacode config init
+supadupacode config show
+supadupacode config set api.provider openai
+supadupacode config reset
+```
+
+### `setup`
+Interactive setup wizard for initial configuration.
+
+**Usage:**
+```bash
+supadupacode setup
+```
+
+**Description:**
+Guides you through the initial setup process, including:
+- API provider configuration
+- Agent setup
+- Memory system initialization
+- Workflow preferences
+
+### `sd`
+Simplified interface for common operations.
+
+**Usage:**
+```bash
+sd [command]
+```
+
+**Description:**
+A simplified alias for common SupaDupaCode operations. Provides a streamlined interface for frequently used commands.
 
 ---
 
