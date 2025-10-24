@@ -9,18 +9,18 @@ The SupaDupaCode CLI has been simplified to focus on the essential commands for 
 The following redundant commands have been removed from the CLI:
 
 ### Monitoring & Observability
-- **`metrics`** - Metrics collection is better handled by external monitoring dashboards (Prometheus, Grafana, Datadog)
+- **`metrics`** - Metrics collection is better handled by external monitoring dashboards (Prometheus, Grafana, DataDog)
 - **`logs`** - Log querying is typically done through specialized logging tools (ELK stack, Splunk, CloudWatch)
-- **`alert`** - Alert configuration is managed through dedicated alerting systems (PagerDuty, Sentry, OpsGenie)
+- **`alert`** - Alert configuration is managed through dedicated alerting systems (PagerDuty, Sentry, Opsgenie)
 
 ### Debugging & Diagnostics
-- **`debug`** - Debugging and tracing can be done with external tools (Chrome DevTools, VS Code debugger, APM tools)
+- **`debug`** - Debugging and tracing can be done with external tools (Chrome DevTools, VS Code debugger, New Relic, Dynatrace, AppDynamics)
 - **`health`** - Health checks are automated in CI/CD pipelines and deployment systems
 
 ### Environment & Deployment
 - **`env`** - Environment management is handled by infrastructure-as-code tools (Terraform, Ansible, CloudFormation)
 - **`deploy`** - Deployment is managed through CI/CD pipelines (GitHub Actions, GitLab CI, CircleCI)
-- **`rollback`** - Rollback operations are performed through deployment platforms (Kubernetes, Docker Swarm, cloud providers)
+- **`rollback`** - Rollback operations are performed through deployment platforms (Helm rollback, kubectl rollout undo, cloud provider deployment rollback features)
 - **`version`** - Version information is standard boilerplate available through `--version` flag
 - **`validate`** - Configuration validation is integrated into the workflow commands
 
@@ -86,7 +86,7 @@ supadupacode logs query --agent=planner
 Use external monitoring tools:
 - Prometheus + Grafana for metrics
 - ELK stack or CloudWatch for logs
-- Application Performance Monitoring (APM) tools
+- Application Performance Monitoring tools (New Relic, Dynatrace, AppDynamics)
 
 ### For Deployment
 **Before:**
