@@ -12,9 +12,7 @@ import { agentCommand } from './commands/agent.js';
 import { memoryCommand } from './commands/memory.js';
 import { apiCommand, authCommand } from './commands/api.js';
 import { workflowCommand } from './commands/workflow.js';
-import { metricsCommand, logsCommand, alertCommand } from './commands/monitoring.js';
-import { debugCommand, healthCommand } from './commands/debug.js';
-import { envCommand, deployCommand, rollbackCommand, versionCommand, validateCommand } from './commands/environment.js';
+
 import { providerCommand } from './commands/provider.js';
 import { createChatCommand } from './commands/chat.js';
 import { createSetupCommand } from './commands/setup.js';
@@ -47,16 +45,7 @@ interface CommandOptions {
   interval?: number;
   parallel?: boolean;
   errorStrategy?: string;
-  severity?: string;
-  since?: string;
-  outputOption?: string;
-  component?: string;
-  env?: string;
-  incremental?: boolean;
-  version?: string;
-  action?: string;
   description?: string;
-  duration?: number;
 }
 
 const program = new Command();
@@ -184,90 +173,6 @@ program
   .option('--parallel', 'Enable parallel execution')
   .option('--error-strategy <strategy>', 'Error handling strategy')
   .action((action?: string, workflowId?: string, options: CommandOptions = {}) => workflowCommand(action, workflowId, options));
-
-// Metrics command - collect and view metrics
-program
-  .command('metrics')
-  .description('Collect and view system metrics')
-  .argument('[action]', 'Action: collect, show', 'collect')
-  .option('--format <format>', 'Output format (json, prometheus)')
-  .option('--interval <seconds>', 'Collection interval')
-  .action((action?: string, options: CommandOptions = {}) => metricsCommand(action, options));
-
-// Logs command - query and export logs
-program
-  .command('logs')
-  .description('Query and export logs')
-  .argument('[action]', 'Action: query, export', 'query')
-  .option('--agent <name>', 'Filter by agent')
-  .option('--severity <level>', 'Filter by severity (info, warn, error)')
-  .option('--since <time>', 'Filter by time')
-  .option('--format <format>', 'Export format')
-  .option('--output <file>', 'Output file')
-  .action((action?: string, options: CommandOptions = {}) => logsCommand(action, options));
-
-// Alert command - configure alerts
-program
-  .command('alert')
-  .description('Configure monitoring alerts')
-  .argument('[action]', 'Action: configure, list', 'list')
-  .argument('[name]', 'Alert name')
-  .option('--metric <metric>', 'Metric to monitor')
-  .option('--threshold <value>', 'Alert threshold')
-  .option('--channel <channel>', 'Notification channel')
-  .action((action?: string, name?: string, options: CommandOptions = {}) => alertCommand(action, name, options));
-
-// Debug command - debugging and diagnostics
-program
-  .command('debug')
-  .description('Debug and trace system operations')
-  .argument('[action]', 'Action: trace, inspect', 'trace')
-  .option('--agent <name>', 'Agent to trace')
-  .option('--duration <seconds>', 'Trace duration')
-  .option('--component <name>', 'Component to inspect')
-  .action((action?: string, options: CommandOptions = {}) => debugCommand(action, options));
-
-// Health command - system health check
-program
-  .command('health')
-  .description('Perform system health check')
-  .action((options: CommandOptions = {}) => healthCommand(options));
-
-// Env command - environment management
-program
-  .command('env')
-  .description('Manage execution environments')
-  .argument('[action]', 'Action: setup, list', 'setup')
-  .option('--env <environment>', 'Environment name (development, staging, production)')
-  .action((action?: string, options: CommandOptions = {}) => envCommand(action, options));
-
-// Deploy command - deploy application
-program
-  .command('deploy')
-  .description('Deploy application to environment')
-  .option('--env <environment>', 'Target environment')
-  .option('--incremental', 'Incremental deployment')
-  .action((options: CommandOptions = {}) => deployCommand(options));
-
-// Rollback command - rollback deployment
-program
-  .command('rollback')
-  .description('Rollback to previous version')
-  .option('--version <version>', 'Version to rollback to')
-  .action((options: CommandOptions = {}) => rollbackCommand(options));
-
-// Version command - show version information
-program
-  .command('version')
-  .description('Show version information')
-  .option('--action <action>', 'Action: show, list')
-  .action((options: CommandOptions = {}) => versionCommand(options));
-
-// Validate command - validate configuration
-program
-  .command('validate')
-  .description('Validate system configuration')
-  .action((options: CommandOptions = {}) => validateCommand(options));
 
 // Chat command - interactive conversational mode
 program.addCommand(createChatCommand());
