@@ -685,8 +685,24 @@ export class BrainAgent extends BaseAgent {
 
   private async loadSystemPrompt(): Promise<string> {
     try {
-      const promptPath = path.join(process.cwd(), 'cli', 'prompts', 'brain', 'system.md');
-      return await fs.readFile(promptPath, 'utf-8');
+      // Try multiple possible paths for the system prompt
+      const possiblePaths = [
+        path.join(process.cwd(), 'prompts', 'brain', 'system.md'),
+        path.join(process.cwd(), 'cli', 'prompts', 'brain', 'system.md'),
+        path.join(__dirname, '../../prompts/brain/system.md'),
+        path.join(__dirname, '../../../prompts/brain/system.md'),
+      ];
+
+      for (const promptPath of possiblePaths) {
+        try {
+          return await fs.readFile(promptPath, 'utf-8');
+        } catch {
+          continue;
+        }
+      }
+
+      // Fallback se não encontrar o arquivo
+      return 'You are a Brain Agent orchestrator.';
     } catch {
       // Fallback se não encontrar o arquivo
       return 'You are a Brain Agent orchestrator.';

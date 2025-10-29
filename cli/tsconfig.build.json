@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests/**/*",
+    "cli/data",
+    "cli/planner/output",
+    "cli/workflow/reports",
+    "cli/qa"
+  ]
+}
