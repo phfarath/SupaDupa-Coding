@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+cli/node_modules/
+cli_backup/node_modules/
+
+# Build outputs
+dist/
+cli/dist/
+*.js.map
+*.d.ts.map
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.token
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# CLI specific
+.supadupacode/
+.supadupacode.json
+.supadupacode.token
+.supadupacode.key
+
+# Generated plans
+plan-*.json
+cli/planner/output/*.json
+!cli/planner/output/.gitkeep
+
+# Workflow and QA outputs
+cli/workflow/reports/*.json
+!cli/workflow/reports/.gitkeep
+cli/qa/output/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

@@ -27,16 +27,17 @@
     "strictNullChecks": false
   },
   "include": [
-    "src/**/*",
-    "shared/**/*"
+  "src/**/*",
+  "shared/**/*",
+  "tests/**/*"
   ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "cli/data",
-    "cli/planner/output",
-    "cli/workflow/reports",
-    "cli/qa"
+  "node_modules",
+  "dist",
+  "cli/data",
+  "cli/planner/output",
+  "cli/workflow/reports",
+  "cli/qa"
   ],
   "ts-node": {
     "esm": true
