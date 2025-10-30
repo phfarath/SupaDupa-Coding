@@ -5,6 +5,8 @@ import { sdProviderRegistry } from '../api/provider-registry';
 import { sdOpenAIProvider } from '../api/providers/openai-provider';
 import { sdAnthropicProvider } from '../api/providers/anthropic-provider';
 import { sdLocalProvider } from '../api/providers/local-provider';
+import { sdPlannerOrchestrator } from './planner/plan-orchestrator';
+import { PlannerInputDTO } from '../../shared/contracts/plan-schema';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -54,6 +56,7 @@ export class BrainAgent extends BaseAgent {
   private activeAgents: Set<string>;
   private conversationHistory: Array<{ role: string; content: string }> = [];
   private providerRegistry: sdProviderRegistry;
+  private plannerOrchestrator: sdPlannerOrchestrator;
   private useLLM: boolean = true; // Toggle para usar LLM ou fallback
 
   constructor(config: { name: string; sessionManager: SessionManager; activeAgents: string[] }) {
@@ -65,6 +68,7 @@ export class BrainAgent extends BaseAgent {
     this.sessionManager = config.sessionManager;
     this.activeAgents = new Set(config.activeAgents);
     this.providerRegistry = new sdProviderRegistry();
+    this.plannerOrchestrator = new sdPlannerOrchestrator({ persistOutput: true });
   }
 
   /**
@@ -166,7 +170,7 @@ export class BrainAgent extends BaseAgent {
       // Executar estratégia
       progressUI.showSeparator();
       
-      const result = await this.executeStrategy(analysis, progressUI);
+      const result = await this.executeStrategy(analysis, progressUI, userPrompt);
 
       const duration = Date.now() - startTime;
 
@@ -527,15 +531,15 @@ export class BrainAgent extends BaseAgent {
     return steps;
   }
 
-  private async executeStrategy(strategy: ExecutionStrategy, progressUI: ProgressUI): Promise<any> {
+  private async executeStrategy(strategy: ExecutionStrategy, progressUI: ProgressUI, userPrompt: string): Promise<any> {
     if (strategy.mode === 'sequential') {
-      return await this.executeSequential(strategy.steps, progressUI);
+      return await this.executeSequential(strategy.steps, progressUI, userPrompt);
     } else {
-      return await this.executeParallel(strategy.steps, progressUI);
+      return await this.executeParallel(strategy.steps, progressUI, userPrompt);
     }
   }
 
-  private async executeSequential(steps: ExecutionStep[], progressUI: ProgressUI): Promise<any> {
+  private async executeSequential(steps: ExecutionStep[], progressUI: ProgressUI, userPrompt: string): Promise<any> {
     const results: any[] = [];
     const filesModified: string[] = [];
     let testsRun = 0;
@@ -544,15 +548,15 @@ export class BrainAgent extends BaseAgent {
       progressUI.startAgentWork(step.agent, step.task);
 
       try {
-        // Simular execução do agente
-        // TODO: Integrar com agentes reais
-        await this.simulateAgentWork(step);
+        // Execute real agent or simulate
+        const agentResult = await this.simulateAgentWork(step, userPrompt);
 
         const result = {
           agent: step.agent,
           task: step.task,
           success: true,
           files: step.files,
+          ...agentResult,
         };
 
         results.push(result);
@@ -577,7 +581,7 @@ export class BrainAgent extends BaseAgent {
     };
   }
 
-  private async executeParallel(steps: ExecutionStep[], progressUI: ProgressUI): Promise<any> {
+  private async executeParallel(steps: ExecutionStep[], progressUI: ProgressUI, userPrompt: string): Promise<any> {
     // Criar DAG de dependências
     const levels = this.createDependencyLevels(steps);
     
@@ -591,13 +595,14 @@ export class BrainAgent extends BaseAgent {
         progressUI.startAgentWork(step.agent, step.task);
 
         try {
-          await this.simulateAgentWork(step);
+          const agentResult = await this.simulateAgentWork(step, userPrompt);
 
           const result = {
             agent: step.agent,
             task: step.task,
             success: true,
             files: step.files,
+            ...agentResult,
           };
 
           filesModified.push(...step.files);
@@ -657,10 +662,38 @@ export class BrainAgent extends BaseAgent {
     return levels;
   }
 
-  private async simulateAgentWork(step: ExecutionStep): Promise<void> {
-    // Simular trabalho do agente
+  private async simulateAgentWork(step: ExecutionStep, userPrompt?: string): Promise<any> {
+    // Execute real planner orchestrator if the agent is 'planner'
+    if (step.agent === 'planner' && userPrompt) {
+      try {
+        const planInput: PlannerInputDTO = {
+          request: userPrompt,
+          context: {
+            projectType: 'cli-tool',
+            techStack: ['TypeScript', 'Node.js'],
+          },
+          preferences: {
+            prioritizeQuality: true,
+          },
+          metadata: {
+            source: 'brain-agent',
+            category: 'orchestrated-task',
+            urgency: 'medium',
+          },
+        };
+        
+        const plan = this.plannerOrchestrator.createExecutionPlan(planInput);
+        return { plan, success: true };
+      } catch (error) {
+        console.warn('Planner orchestrator failed:', (error as Error).message);
+        // Fall back to simulation
+      }
+    }
+
+    // Simular trabalho do agente para outros agentes
     const duration = step.estimatedDuration || 3000;
     await new Promise(resolve => setTimeout(resolve, Math.min(duration, 5000)));
+    return { success: true };
   }
 
   private extractAllFiles(steps: ExecutionStep[]): string[] {
