@@ -413,13 +413,51 @@ export class sdPlannerOrchestrator extends EventEmitter {
   }
 
   private loadSystemPrompt(customPath?: string): string {
-    const promptPath = customPath ?? path.join(this.baseDir, 'prompts', 'planner', 'system', 'v1.md');
-    try {
-      const data = readFileSync(promptPath, 'utf-8');
-      return data.trim();
-    } catch (error) {
-      return '';
+    if (customPath) {
+      try {
+        const data = readFileSync(customPath, 'utf-8');
+        return data.trim();
+      } catch (error) {
+        // Continue to fallback paths
+      }
     }
+
+    // Try multiple possible paths for the system prompt
+    const possiblePaths = [
+      path.join(process.cwd(), 'prompts', 'planner', 'system', 'v1.md'),
+      path.join(process.cwd(), 'cli', 'prompts', 'planner', 'system', 'v1.md'),
+      path.join(__dirname, '../../prompts/planner/system/v1.md'),
+      path.join(__dirname, '../../../prompts/planner/system/v1.md'),
+      path.join(__dirname, '../../../../prompts/planner/system/v1.md'),
+      path.join(this.baseDir, 'prompts', 'planner', 'system', 'v1.md'),
+    ];
+
+    for (const promptPath of possiblePaths) {
+      try {
+        const data = readFileSync(promptPath, 'utf-8');
+        return data.trim();
+      } catch {
+        continue;
+      }
+    }
+
+    // Fallback prompt if file not found
+    return `# sdPlanner System Prompt
+
+You are sdPlanner, the core planning agent inside the SupaDupaCode CLI.
+Transform high-level feature requests into structured execution plans.
+
+## Output Contract
+Respond in JSON matching PlannerPlanDTO with:
+- planId, description, steps, artifacts, metadata
+- Each step must have: id, agent, type, dependencies, expectedOutputs
+- Plan metadata: timestamps, duration, priority, tags, version
+
+## Quality Guardrails
+- Keep dependencies acyclic
+- Never omit QA unless constraints forbid it
+- Use sd* naming convention
+- Respect maxDuration constraints`;
   }
 
   private persistPlan(plan: PlannerPlanDTO): void {

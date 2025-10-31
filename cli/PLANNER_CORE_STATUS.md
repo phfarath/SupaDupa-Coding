@@ -2,8 +2,20 @@
 
 ## ✅ IMPLEMENTAÇÃO COMPLETA E FUNCIONAL
 
-Data: 2024-10-29
-Branch: `fix-cli-multiagent-orchestration`
+Data: 2024-10-30 (Updated)
+Branch: `feat-cli-implement-fixes-from-readme-planner-core-status`
+
+## 🔧 Correções Recentes
+
+### System Prompt Loading Fix
+- **Problema Resolvido**: Path resolution do system prompt após compilação TypeScript
+- **Solução**: Implementado fallback com múltiplos caminhos (similar ao brain-agent.ts)
+- **Validação**: System prompt agora carrega 2817 caracteres corretamente
+
+### Brain Agent Integration
+- **Funcionalidade**: Brain Agent integrado com sdPlannerOrchestrator
+- **Implementação**: Método `simulateAgentWork` chama o orchestrator real para steps "planner"
+- **Teste**: `test-planner-integration.js` valida integração completa
 
 ---
 

@@ -158,18 +158,82 @@ npm run type-check    # Verifica tipos TypeScript
 - Use `supadupacode provider add <nome>` ou `supadupacode setup`
 - Ou configure via environment: `OPENAI_API_KEY`
 
+## 5. Correção do Planner Orchestrator - System Prompt Loading
+
+### Problema
+- `plan-orchestrator.ts` não carregava o system prompt corretamente
+- Path `../../..` do `__dirname` compilado não apontava para o diretório correto
+- Test mostrava "0 characters" para o system prompt
+
+### Solução
+- Implementado fallback com múltiplos caminhos possíveis (similar ao `brain-agent.ts`)
+- Busca em ordem de prioridade:
+  1. `process.cwd()/prompts/planner/system/v1.md` (executando da raiz)
+  2. `process.cwd()/cli/prompts/planner/system/v1.md` (executando da raiz do repo)
+  3. Paths relativos usando `__dirname` com diferentes níveis
+  4. Path do `baseDir` configurado
+- Fallback gracioso para prompt padrão se nenhum arquivo encontrado
+
+**Arquivo:** `cli/src/agents/planner/plan-orchestrator.ts` (método `loadSystemPrompt`)
+
+## 6. Integração do Planner com Brain Agent
+
+### Implementação
+- Brain Agent agora usa `sdPlannerOrchestrator` quando executa steps do tipo "planner"
+- Método `simulateAgentWork` atualizado para chamar o orchestrator real
+- `PlannerInputDTO` construído a partir do prompt do usuário
+- Plans criados são automaticamente enfileirados via `plannerExecutionQueue`
+
+### Arquivos Modificados
+- `cli/src/agents/brain-agent.ts`:
+  - Importado `sdPlannerOrchestrator` e `PlannerInputDTO`
+  - Adicionado `plannerOrchestrator` como propriedade da classe
+  - Método `simulateAgentWork` agora executa planner real
+  - Propagação do `userPrompt` através da cadeia de execução
+
+### Teste de Integração
+- Criado `test-planner-integration.js` que valida:
+  - ✅ Inicialização do orchestrator
+  - ✅ Carregamento do system prompt
+  - ✅ Emissão de eventos `SD_EVENT_PLAN_CREATED`
+  - ✅ Integração com `plannerExecutionQueue`
+  - ✅ Criação de plans com diferentes preferências
+  - ✅ Respeito a constraints (maxDuration)
+  - ✅ Resolução de paths do sistema
+
+## 7. Estrutura de Arquivos Atualizada
+
+```
+cli/
+├── src/
+│   └── agents/
+│       ├── brain-agent.ts             [MODIFICADO] - Integrado com planner
+│       └── planner/
+│           ├── plan-orchestrator.ts   [MODIFICADO] - Fallback de paths
+│           └── queue.ts               [EXISTENTE] ✅
+├── test-planner-simple.js             [EXISTENTE] ✅
+├── test-planner-integration.js        [NOVO] - Teste de integração completo
+└── prompts/
+    └── planner/
+        └── system/
+            └── v1.md                  [EXISTENTE] ✅
+```
+
 ## 8. Validação Final
 
 ✅ **Build**: Passa sem erros
 ✅ **Lint**: 0 erros (191 warnings aceitáveis)
 ✅ **Planner Core**: Todos os módulos implementados e testados
-✅ **Integração**: Brain Agent pode usar providers
+✅ **Integração**: Brain Agent integrado com Planner Orchestrator
+✅ **System Prompt**: Carregando corretamente (2817 caracteres)
+✅ **Queue Integration**: Plans enfileirados automaticamente
+✅ **Event System**: Eventos `SD_EVENT_PLAN_CREATED` funcionando
 ✅ **CLI Chat**: Pronto para uso
 
 ## 9. Próximos Passos (Sugestões)
 
 1. **Corrigir tests unitários** - Atualizar para nova estrutura de agentes
-2. **Integrar Planner com Brain Agent** - Usar `sdPlannerOrchestrator` no fluxo de chat
+2. ~~**Integrar Planner com Brain Agent**~~ ✅ **CONCLUÍDO** - Brain Agent usa `sdPlannerOrchestrator`
 3. **Implementar agentes reais** - Developer, QA, Docs agents com funcionalidade real
 4. **Melhorar error handling** - Logs estruturados e melhor feedback ao usuário
 5. **Documentação** - README com exemplos de uso dos diferentes comandos
