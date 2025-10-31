@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { PlannerPlanDTO } from '../../../shared/contracts/plan-schema';
+import { PlannerPlanDTO, PlannerStepDTO } from '../../../shared/contracts/plan-schema';
 
 export interface PlannerQueueItemMetadata {
   request?: string;
@@ -52,12 +52,66 @@ export class sdPlannerExecutionQueue extends EventEmitter {
     return this.items.length;
   }
 
+  /**
+   * BUG FIX #3: Deep copy snapshot to prevent external mutation
+   * Ensures metadata and nested objects are fully cloned
+   */
   getSnapshot(): PlannerQueueItem[] {
-    return this.items.map((item) => ({
-      ...item,
-      plan: { ...item.plan, steps: item.plan.steps.map((step) => ({ ...step })) },
-      metadata: { ...item.metadata },
-    }));
+    return this.items.map((item) => this.cloneQueueItem(item));
+  }
+
+  private cloneQueueItem(item: PlannerQueueItem): PlannerQueueItem {
+    return {
+      plan: this.clonePlan(item.plan),
+      enqueuedAt: item.enqueuedAt,
+      metadata: this.cloneMetadata(item.metadata),
+    };
+  }
+
+  private clonePlan(plan: PlannerPlanDTO): PlannerPlanDTO {
+    return {
+      planId: plan.planId,
+      description: plan.description,
+      steps: plan.steps.map((step) => this.cloneStep(step)),
+      artifacts: [...plan.artifacts],
+      metadata: {
+        createdAt: plan.metadata.createdAt,
+        estimatedDuration: plan.metadata.estimatedDuration,
+        dependencies: [...plan.metadata.dependencies],
+        priority: plan.metadata.priority,
+        tags: [...plan.metadata.tags],
+        version: plan.metadata.version,
+      },
+    };
+  }
+
+  private cloneStep(step: PlannerStepDTO): PlannerStepDTO {
+    return {
+      id: step.id,
+      name: step.name,
+      type: step.type,
+      agent: step.agent,
+      description: step.description,
+      dependencies: [...step.dependencies],
+      expectedOutputs: [...step.expectedOutputs],
+      estimatedDuration: step.estimatedDuration,
+      metadata: step.metadata
+        ? {
+            complexity: step.metadata.complexity,
+            risk: step.metadata.risk,
+            requiredSkills: [...step.metadata.requiredSkills],
+            prerequisites: [...step.metadata.prerequisites],
+          }
+        : undefined,
+    };
+  }
+
+  private cloneMetadata(metadata: PlannerQueueItemMetadata): PlannerQueueItemMetadata {
+    return {
+      request: metadata.request,
+      source: metadata.source,
+      tags: metadata.tags ? [...metadata.tags] : undefined,
+    };
   }
 
   findByPlanId(planId: string): PlannerQueueItem | undefined {
