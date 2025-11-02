@@ -8,6 +8,7 @@ import {
   PlannerStepDTO,
 } from '../../../shared/contracts/plan-schema';
 import { SD_API_EVENTS } from '../../constants/api-events';
+import { logger } from '../../utils/logger';
 import { plannerExecutionQueue, PlannerQueueItemMetadata } from './queue';
 
 interface PlannerOrchestratorConfig {
@@ -25,6 +26,7 @@ export class sdPlannerOrchestrator extends EventEmitter {
   private readonly outputPath: string;
   private readonly systemPrompt: string;
   private readonly persistOutput: boolean;
+  private readonly planMetadataTags: Set<string>;
 
   constructor(config: PlannerOrchestratorConfig = {}) {
     super();
@@ -33,6 +35,7 @@ export class sdPlannerOrchestrator extends EventEmitter {
     this.outputPath = config.outputPath ?? path.join(this.baseDir, 'planner', 'output', 'plan_v1.json');
     this.persistOutput = config.persistOutput ?? true;
     this.systemPrompt = this.loadSystemPrompt(config.promptPath);
+    this.planMetadataTags = new Set();
   }
 
   getSystemPrompt(): string {
@@ -68,6 +71,8 @@ export class sdPlannerOrchestrator extends EventEmitter {
   }
 
   private composePlan(planInput: PlannerInputDTO): PlannerPlanDTO {
+    this.resetPlanContext();
+
     const planId = this.generatePlanId();
     const description = planInput.request.trim();
     const steps = this.buildSteps(planId, planInput);
@@ -198,7 +203,207 @@ export class sdPlannerOrchestrator extends EventEmitter {
       });
     }
 
-    return this.applyDurationConstraints(steps, planInput);
+    let adjustedSteps = this.enforceAgentConstraints(steps, planInput);
+    adjustedSteps = this.applyDurationConstraints(adjustedSteps, planInput);
+    return adjustedSteps;
+  }
+
+  /**
+   * BUG FIX #1: Enforce forbiddenAgents constraint
+   * Validates each step's agent and adapts if forbidden
+   */
+  private enforceAgentConstraints(steps: PlannerStepDTO[], planInput: PlannerInputDTO): PlannerStepDTO[] {
+    const forbiddenAgents = new Set(
+      (planInput.constraints?.forbiddenAgents ?? []).map((agent) => agent.toLowerCase().trim())
+    );
+
+    if (forbiddenAgents.size === 0) {
+      return steps.map((step) => this.cloneStep(step));
+    }
+
+    const allowedAgents = (planInput.constraints?.allowedAgents ?? [])
+      .map((agent) => ({ raw: agent, normalized: agent.toLowerCase().trim() }))
+      .filter((candidate) => !forbiddenAgents.has(candidate.normalized));
+
+    const agentMapping: Record<string, string[]> = {
+      planner: ['coder', 'developer'],
+      developer: ['coder', 'planner'],
+      coder: ['developer', 'planner'],
+      qa: ['planner', 'developer'],
+    };
+
+    const removedStepIds = new Set<string>();
+    const adjustedSteps: PlannerStepDTO[] = [];
+
+    for (const step of steps) {
+      const clonedStep = this.cloneStep(step);
+      const normalizedAgent = clonedStep.agent.toLowerCase().trim();
+
+      if (!forbiddenAgents.has(normalizedAgent)) {
+        adjustedSteps.push(clonedStep);
+        continue;
+      }
+
+      const alternative = this.resolveAlternativeAgent(
+        clonedStep.agent,
+        allowedAgents,
+        agentMapping,
+        forbiddenAgents
+      );
+
+      if (alternative) {
+        logger.warn(
+          `Remapping agent for step '${clonedStep.name}' from '${clonedStep.agent}' to '${alternative.agent}' due to forbidden agent constraint`,
+          {
+            stepId: clonedStep.id,
+            originalAgent: clonedStep.agent,
+            newAgent: alternative.agent,
+            source: alternative.source,
+          }
+        );
+
+        clonedStep.agent = alternative.agent;
+        clonedStep.description = this.appendMitigationNote(
+          clonedStep.description,
+          `reassigned from '${step.agent}' due to agent constraint`
+        );
+        this.appendMetadataPrerequisite(
+          clonedStep,
+          `Agent reassigned from '${step.agent}' to '${alternative.agent}' to satisfy forbidden agent constraints.`
+        );
+        this.registerMetadataTag('agent-remapped');
+        adjustedSteps.push(clonedStep);
+        continue;
+      }
+
+      if (this.isOptionalStep(clonedStep)) {
+        logger.warn(
+          `Removing optional step '${clonedStep.name}' because agent '${clonedStep.agent}' is forbidden and no alternatives exist`,
+          {
+            stepId: clonedStep.id,
+            agent: clonedStep.agent,
+          }
+        );
+        removedStepIds.add(clonedStep.id);
+        this.registerMetadataTag('optional-step-removed');
+        continue;
+      }
+
+      logger.warn(
+        `Agent '${clonedStep.agent}' for step '${clonedStep.name}' is forbidden; manual mitigation required`,
+        {
+          stepId: clonedStep.id,
+          agent: clonedStep.agent,
+        }
+      );
+      clonedStep.description = this.appendMitigationNote(
+        clonedStep.description,
+        `manual mitigation required because '${clonedStep.agent}' is forbidden`
+      );
+      this.appendMetadataPrerequisite(
+        clonedStep,
+        `Manual mitigation required: agent '${clonedStep.agent}' is forbidden. Assign alternative resource or handle manually.`
+      );
+      this.registerMetadataTag('agent-mitigation-required');
+      adjustedSteps.push(clonedStep);
+    }
+
+    if (removedStepIds.size === 0) {
+      return adjustedSteps;
+    }
+
+    return adjustedSteps.map((step) => {
+      const filteredDependencies = step.dependencies.filter(
+        (dependency) => !removedStepIds.has(dependency)
+      );
+
+      if (filteredDependencies.length !== step.dependencies.length) {
+        this.appendMetadataPrerequisite(
+          step,
+          `Dependencies adjusted after removing steps: ${Array.from(removedStepIds).join(', ')}`
+        );
+        this.registerMetadataTag('dependency-adjusted');
+      }
+
+      return {
+        ...step,
+        dependencies: filteredDependencies,
+      };
+    });
+  }
+
+  private cloneStep(step: PlannerStepDTO): PlannerStepDTO {
+    return {
+      ...step,
+      dependencies: [...step.dependencies],
+      expectedOutputs: [...step.expectedOutputs],
+      metadata: step.metadata
+        ? {
+            ...step.metadata,
+            requiredSkills: [...(step.metadata.requiredSkills ?? [])],
+            prerequisites: [...(step.metadata.prerequisites ?? [])],
+          }
+        : undefined,
+    };
+  }
+
+  private resolveAlternativeAgent(
+    originalAgent: string,
+    allowedAgents: { raw: string; normalized: string }[],
+    mapping: Record<string, string[]>,
+    forbiddenAgents: Set<string>
+  ): { agent: string; source: string } | null {
+    const normalizedOriginal = originalAgent.toLowerCase().trim();
+
+    if (allowedAgents.length > 0) {
+      for (const candidate of allowedAgents) {
+        if (candidate.normalized !== normalizedOriginal) {
+          return { agent: candidate.raw, source: 'allowedAgents' };
+        }
+      }
+    }
+
+    const alternatives = mapping[normalizedOriginal] ?? [];
+    for (const alternative of alternatives) {
+      if (!forbiddenAgents.has(alternative.toLowerCase().trim())) {
+        return { agent: alternative, source: 'mapping' };
+      }
+    }
+
+    return null;
+  }
+
+  private isOptionalStep(step: PlannerStepDTO): boolean {
+    return step.type === 'governance';
+  }
+
+  private appendMitigationNote(description: string, note: string): string {
+    const formattedNote = `[NOTE: ${note}]`;
+    if (description.includes(formattedNote)) {
+      return description;
+    }
+    return `${description} ${formattedNote}`.trim();
+  }
+
+  private appendMetadataPrerequisite(step: PlannerStepDTO, prerequisite: string): void {
+    if (!step.metadata) {
+      return;
+    }
+
+    if (!step.metadata.prerequisites.includes(prerequisite)) {
+      step.metadata.prerequisites = [...step.metadata.prerequisites, prerequisite];
+    }
+  }
+
+  private registerMetadataTag(tag: string): void {
+    const normalized = this.normalizeTag(tag);
+    if (normalized) {
+      this.planMetadataTags.add(normalized);
+    }
+  }
+
+  private resetPlanContext(): void {
+    this.planMetadataTags.clear();
   }
 
   private adjustDuration(baseDuration: number, planInput: PlannerInputDTO): number {
@@ -217,33 +422,184 @@ export class sdPlannerOrchestrator extends EventEmitter {
     return Math.max(15, duration);
   }
 
+  /**
+   * OPTIMIZATION #3: Adjust duration distribution with optional step removal
+   * and metadata documentation
+   */
   private applyDurationConstraints(steps: PlannerStepDTO[], planInput: PlannerInputDTO): PlannerStepDTO[] {
     const maxDuration = planInput.constraints?.maxDuration;
     if (!maxDuration) {
-      return steps;
+      return steps.map((step) => this.cloneStep(step));
     }
 
-    const totalDuration = this.computeEstimatedDuration(steps);
+    let workingSteps = steps.map((step) => this.cloneStep(step));
+    let totalDuration = this.computeEstimatedDuration(workingSteps);
+
     if (totalDuration === 0 || totalDuration <= maxDuration) {
-      return steps;
+      return workingSteps;
+    }
+
+    const initialRatio = maxDuration / totalDuration;
+    const optionalSteps = workingSteps.filter((step) => this.isOptionalStep(step));
+    const optionalDuration = optionalSteps.reduce((sum, step) => sum + (step.estimatedDuration ?? 0), 0);
+    const requiredReduction = totalDuration - maxDuration;
+
+    logger.warn(
+      `Plan duration (${totalDuration} min) exceeds constraint (${maxDuration} min). Reduction needed: ${requiredReduction} min.`,
+      {
+        totalDuration,
+        maxDuration,
+        requiredReduction,
+        initialRatio,
+      }
+    );
+
+    const shouldRemoveOptional =
+      optionalSteps.length > 0 && (optionalDuration >= requiredReduction || initialRatio < 0.6);
+
+    if (shouldRemoveOptional) {
+      const removedIds = new Set(optionalSteps.map((step) => step.id));
+      logger.warn(
+        `Removing ${optionalSteps.length} optional step(s) to enforce maxDuration (saves ${optionalDuration} min)`,
+        {
+          removedSteps: optionalSteps.map((step) => ({ id: step.id, name: step.name })),
+          savedMinutes: optionalDuration,
+        }
+      );
+
+      this.registerMetadataTag('optional-steps-removed-duration');
+
+      workingSteps = workingSteps
+        .filter((step) => !removedIds.has(step.id))
+        .map((step) => {
+          const filteredDependencies = step.dependencies.filter((dependency) => !removedIds.has(dependency));
+          if (filteredDependencies.length !== step.dependencies.length) {
+            this.appendMetadataPrerequisite(
+              step,
+              `Dependencies adjusted after removing optional steps: ${Array.from(removedIds).join(', ')}`
+            );
+            this.registerMetadataTag('dependency-adjusted');
+          }
+
+          step.dependencies = filteredDependencies;
+          this.appendMetadataPrerequisite(
+            step,
+            `Optional steps removed to satisfy maxDuration (${maxDuration} min). Original total duration: ${totalDuration} min.`
+          );
+          return step;
+        });
+
+      totalDuration = this.computeEstimatedDuration(workingSteps);
+
+      if (totalDuration <= maxDuration) {
+        this.registerMetadataTag('duration-constrained');
+        logger.warn('Max duration satisfied after optional step removal', {
+          maxDuration,
+          updatedDuration: totalDuration,
+        });
+        return workingSteps;
+      }
     }
 
     const ratio = maxDuration / totalDuration;
-    return steps.map((step) => ({
-      ...step,
-      estimatedDuration: step.estimatedDuration
-        ? Math.max(15, Math.round(step.estimatedDuration * ratio))
-        : undefined,
-    }));
+
+    workingSteps = workingSteps.map((step) => {
+      if (!step.estimatedDuration) {
+        return step;
+      }
+
+      const originalDuration = step.estimatedDuration;
+      const scaledDuration = Math.max(15, Math.round(originalDuration * ratio));
+
+      if (scaledDuration < originalDuration) {
+        this.registerMetadataTag('duration-adjusted');
+        this.registerMetadataTag('partial-execution');
+        step.description = this.appendMitigationNote(
+          step.description,
+          `partial execution expected, duration reduced by ${Math.round((1 - ratio) * 100)}%`
+        );
+        this.appendMetadataPrerequisite(
+          step,
+          `Duration reduced from ${originalDuration} min to ${scaledDuration} min to comply with maxDuration (${maxDuration} min).`
+        );
+      }
+
+      step.estimatedDuration = scaledDuration;
+      return step;
+    });
+
+    this.redistributeDurationOverflow(workingSteps, maxDuration);
+
+    const finalDuration = this.computeEstimatedDuration(workingSteps);
+    this.registerMetadataTag('duration-constrained');
+    logger.warn('Duration ratio applied to satisfy maxDuration constraint', {
+      maxDuration,
+      finalDuration,
+      ratio: Number.isFinite(ratio) ? ratio.toFixed(2) : 'n/a',
+    });
+
+    return workingSteps;
+  }
+
+  private redistributeDurationOverflow(steps: PlannerStepDTO[], maxDuration: number): void {
+    const totalDuration = this.computeEstimatedDuration(steps);
+    if (totalDuration <= maxDuration) {
+      return;
+    }
+
+    const overflow = totalDuration - maxDuration;
+    const flexibleSteps = steps.filter((step) => step.estimatedDuration && step.estimatedDuration > 15);
+
+    if (flexibleSteps.length === 0) {
+      logger.warn('Unable to redistribute duration overflow: all steps at minimum duration threshold', {
+        totalDuration,
+        maxDuration,
+      });
+      this.registerMetadataTag('duration-floor-reached');
+      return;
+    }
+
+    const reductionPerStep = Math.ceil(overflow / flexibleSteps.length);
+    let remainingOverflow = overflow;
+
+    for (const step of flexibleSteps) {
+      if (remainingOverflow <= 0 || !step.estimatedDuration) {
+        break;
+      }
+
+      const maxReduction = step.estimatedDuration - 15;
+      const actualReduction = Math.min(reductionPerStep, maxReduction, remainingOverflow);
+
+      if (actualReduction > 0) {
+        step.estimatedDuration -= actualReduction;
+        remainingOverflow -= actualReduction;
+        this.appendMetadataPrerequisite(
+          step,
+          `Additional ${actualReduction} min reduction applied to distribute overflow within maxDuration.`
+        );
+        this.registerMetadataTag('duration-redistributed');
+      }
+    }
+
+    if (remainingOverflow > 0) {
+      logger.warn('Unable to fully satisfy maxDuration constraint due to minimum duration limits', {
+        remainingOverflow,
+        maxDuration,
+      });
+      this.registerMetadataTag('duration-floor-reached');
+    }
   }
 
   private buildMetadata(planInput: PlannerInputDTO, steps: PlannerStepDTO[]) {
+    const derivedTags = this.deriveTags(planInput, steps);
+    const collectedTags = Array.from(this.planMetadataTags);
+
     return {
       createdAt: new Date().toISOString(),
       estimatedDuration: this.computeEstimatedDuration(steps),
       dependencies: this.collectDependencies(steps),
       priority: this.derivePriority(planInput),
-      tags: this.deriveTags(planInput, steps),
+      tags: [...derivedTags, ...collectedTags.filter((tag) => !derivedTags.includes(tag))],
       version: '1.0.0',
     };
   }
@@ -276,6 +632,22 @@ export class sdPlannerOrchestrator extends EventEmitter {
 
     this.extractTechStack(planInput).forEach((tech) => tags.add(this.normalizeTag(tech)));
 
+    const metadataRecord = planInput.metadata as Record<string, unknown> | undefined;
+    const metadataTags = metadataRecord?.tags;
+    if (Array.isArray(metadataTags)) {
+      metadataTags.forEach((tag) => {
+        if (typeof tag === 'string' && tag.trim()) {
+          tags.add(this.normalizeTag(tag));
+        }
+      });
+    } else if (typeof metadataTags === 'string') {
+      metadataTags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .forEach((tag) => tags.add(this.normalizeTag(tag)));
+    }
+
     if (planInput.preferences?.prioritizeSpeed) {
       tags.add('fast-track');
     }
@@ -291,7 +663,10 @@ export class sdPlannerOrchestrator extends EventEmitter {
     return Array.from(tags);
   }
 
-  private deriveArtifacts(planInput: PlannerInputDTO, planId: string, steps: PlannerStepDTO[]): string[] {
+  /**
+   * BUG FIX #2: Only declare artifacts that will actually be persisted
+   */
+  private deriveArtifacts(planInput: PlannerInputDTO, _planId: string, steps: PlannerStepDTO[]): string[] {
     const artifacts = new Set<string>();
 
     steps.forEach((step) => {
@@ -301,7 +676,6 @@ export class sdPlannerOrchestrator extends EventEmitter {
     this.extractContextArtifacts(planInput).forEach((artifact) => artifacts.add(artifact));
 
     artifacts.add('planner/output/plan_v1.json');
-    artifacts.add(`planner/output/${planId}.json`);
 
     return Array.from(artifacts);
   }
@@ -412,17 +786,19 @@ export class sdPlannerOrchestrator extends EventEmitter {
       .replace(/-{2,}/g, '-');
   }
 
+  /**
+   * OPTIMIZATION #2: Add telemetry when loading prompt (log failed fallback paths)
+   */
   private loadSystemPrompt(customPath?: string): string {
     if (customPath) {
       try {
         const data = readFileSync(customPath, 'utf-8');
         return data.trim();
       } catch (error) {
-        // Continue to fallback paths
+        logger.warn(`Custom prompt path failed: ${customPath}`, { error: String(error) });
       }
     }
 
-    // Try multiple possible paths for the system prompt
     const possiblePaths = [
       path.join(process.cwd(), 'prompts', 'planner', 'system', 'v1.md'),
       path.join(process.cwd(), 'cli', 'prompts', 'planner', 'system', 'v1.md'),
@@ -436,12 +812,16 @@ export class sdPlannerOrchestrator extends EventEmitter {
       try {
         const data = readFileSync(promptPath, 'utf-8');
         return data.trim();
-      } catch {
+      } catch (error) {
+        logger.warn(`Prompt file not found at fallback path: ${promptPath}`, { error: String(error) });
         continue;
       }
     }
 
-    // Fallback prompt if file not found
+    logger.warn('All prompt file paths failed, using embedded fallback prompt', {
+      attemptedPaths: possiblePaths.length,
+    });
+
     return `# sdPlanner System Prompt
 
 You are sdPlanner, the core planning agent inside the SupaDupaCode CLI.
