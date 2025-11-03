@@ -24,7 +24,13 @@
     "type-check": "tsc --project tsconfig.build.json --noEmit",
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
-    "pretest": "npm run type-check && npm run lint:check"
+    "pretest": "npm run type-check && npm run lint:check",
+    "seed": "ts-node scripts/seed-database.ts",
+    "example:e2e": "ts-node examples/end-to-end-workflow.ts",
+    "example:planner": "node test-planner-integration.js",
+    "example:simple": "node test-planner-simple.js",
+    "db:init": "mkdir -p data && npm run seed",
+    "docs:seed": "cat data/seed/README.md"
   },
   "keywords": [
     "cli",

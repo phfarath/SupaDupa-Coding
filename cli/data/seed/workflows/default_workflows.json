@@ -1,0 +1,327 @@
+{
+  "$schema": "../../schemas/workflow-schema.json",
+  "description": "Default workflow templates for common development scenarios",
+  "version": "1.0.0",
+  "workflows": [
+    {
+      "id": "wf_001_feature_standard",
+      "name": "Standard Feature Development",
+      "description": "Complete workflow for implementing a new feature from planning to QA",
+      "steps": [
+        {
+          "id": "step_001_plan",
+          "name": "Create Execution Plan",
+          "agent": "planner",
+          "action": "createPlan",
+          "inputs": {
+            "source": "user-request"
+          },
+          "outputs": ["plan.json"],
+          "dependencies": [],
+          "estimatedDuration": 5
+        },
+        {
+          "id": "step_002_implement",
+          "name": "Implement Feature",
+          "agent": "coder",
+          "action": "implement",
+          "inputs": {
+            "plan": "step_001_plan.outputs.plan"
+          },
+          "outputs": ["implementation.diff", "files.json"],
+          "dependencies": ["step_001_plan"],
+          "estimatedDuration": 45
+        },
+        {
+          "id": "step_003_commit",
+          "name": "Commit Changes",
+          "agent": "git-mcp",
+          "action": "commit",
+          "inputs": {
+            "changes": "step_002_implement.outputs.files"
+          },
+          "outputs": ["commit-info.json"],
+          "dependencies": ["step_002_implement"],
+          "estimatedDuration": 2
+        },
+        {
+          "id": "step_004_test",
+          "name": "Run QA Tests",
+          "agent": "qa",
+          "action": "test",
+          "inputs": {
+            "commitHash": "step_003_commit.outputs.commitHash"
+          },
+          "outputs": ["test-results.json"],
+          "dependencies": ["step_003_commit"],
+          "estimatedDuration": 15
+        },
+        {
+          "id": "step_005_report",
+          "name": "Generate Report",
+          "agent": "workflow",
+          "action": "summarize",
+          "inputs": {
+            "testResults": "step_004_test.outputs"
+          },
+          "outputs": ["workflow-summary.json"],
+          "dependencies": ["step_004_test"],
+          "estimatedDuration": 1
+        }
+      ],
+      "config": {
+        "parallelExecution": false,
+        "errorStrategy": "halt",
+        "checkpointInterval": "step",
+        "retryPolicy": {
+          "maxRetries": 3,
+          "backoffMultiplier": 2
+        }
+      },
+      "metadata": {
+        "category": "feature-development",
+        "tags": ["standard", "complete", "qa"],
+        "estimatedTotalDuration": 68
+      }
+    },
+    {
+      "id": "wf_002_bugfix_rapid",
+      "name": "Rapid Bugfix Workflow",
+      "description": "Fast-track workflow for critical bug fixes with minimal overhead",
+      "steps": [
+        {
+          "id": "step_001_analyze",
+          "name": "Analyze Bug",
+          "agent": "planner",
+          "action": "analyze",
+          "inputs": {
+            "bugReport": "context.bugDescription"
+          },
+          "outputs": ["analysis.json"],
+          "dependencies": [],
+          "estimatedDuration": 3
+        },
+        {
+          "id": "step_002_fix",
+          "name": "Implement Fix",
+          "agent": "coder",
+          "action": "fix",
+          "inputs": {
+            "analysis": "step_001_analyze.outputs.analysis"
+          },
+          "outputs": ["fix.diff"],
+          "dependencies": ["step_001_analyze"],
+          "estimatedDuration": 20
+        },
+        {
+          "id": "step_003_test",
+          "name": "Quick Test",
+          "agent": "qa",
+          "action": "quickTest",
+          "inputs": {
+            "changes": "step_002_fix.outputs"
+          },
+          "outputs": ["test-results.json"],
+          "dependencies": ["step_002_fix"],
+          "estimatedDuration": 8
+        },
+        {
+          "id": "step_004_commit",
+          "name": "Commit Fix",
+          "agent": "git-mcp",
+          "action": "commit",
+          "inputs": {
+            "changes": "step_002_fix.outputs",
+            "message": "fix: resolve critical bug"
+          },
+          "outputs": ["commit-info.json"],
+          "dependencies": ["step_003_test"],
+          "estimatedDuration": 1
+        }
+      ],
+      "config": {
+        "parallelExecution": false,
+        "errorStrategy": "retry-then-halt",
+        "checkpointInterval": "step",
+        "priority": "high",
+        "retryPolicy": {
+          "maxRetries": 2,
+          "backoffMultiplier": 1.5
+        }
+      },
+      "metadata": {
+        "category": "bugfix",
+        "tags": ["rapid", "critical", "hotfix"],
+        "estimatedTotalDuration": 32
+      }
+    },
+    {
+      "id": "wf_003_refactor_safe",
+      "name": "Safe Refactoring Workflow",
+      "description": "Refactoring workflow with comprehensive testing and validation",
+      "steps": [
+        {
+          "id": "step_001_plan",
+          "name": "Plan Refactoring",
+          "agent": "planner",
+          "action": "planRefactor",
+          "inputs": {
+            "targetFiles": "context.files",
+            "goals": "context.refactorGoals"
+          },
+          "outputs": ["refactor-plan.json"],
+          "dependencies": [],
+          "estimatedDuration": 10
+        },
+        {
+          "id": "step_002_baseline",
+          "name": "Create Test Baseline",
+          "agent": "qa",
+          "action": "createBaseline",
+          "inputs": {
+            "targetFiles": "context.files"
+          },
+          "outputs": ["baseline-tests.json"],
+          "dependencies": [],
+          "estimatedDuration": 12
+        },
+        {
+          "id": "step_003_refactor",
+          "name": "Apply Refactoring",
+          "agent": "coder",
+          "action": "refactor",
+          "inputs": {
+            "plan": "step_001_plan.outputs.plan"
+          },
+          "outputs": ["refactored-files.diff"],
+          "dependencies": ["step_001_plan", "step_002_baseline"],
+          "estimatedDuration": 40
+        },
+        {
+          "id": "step_004_validate",
+          "name": "Validate Behavior",
+          "agent": "qa",
+          "action": "validateAgainstBaseline",
+          "inputs": {
+            "baseline": "step_002_baseline.outputs",
+            "changes": "step_003_refactor.outputs"
+          },
+          "outputs": ["validation-report.json"],
+          "dependencies": ["step_003_refactor"],
+          "estimatedDuration": 15
+        },
+        {
+          "id": "step_005_commit",
+          "name": "Commit Refactoring",
+          "agent": "git-mcp",
+          "action": "commit",
+          "inputs": {
+            "changes": "step_003_refactor.outputs",
+            "message": "refactor: improve code structure"
+          },
+          "outputs": ["commit-info.json"],
+          "dependencies": ["step_004_validate"],
+          "estimatedDuration": 2
+        }
+      ],
+      "config": {
+        "parallelExecution": "partial",
+        "parallelGroups": [
+          ["step_001_plan", "step_002_baseline"]
+        ],
+        "errorStrategy": "halt",
+        "checkpointInterval": "step",
+        "retryPolicy": {
+          "maxRetries": 2,
+          "backoffMultiplier": 1.5
+        }
+      },
+      "metadata": {
+        "category": "refactoring",
+        "tags": ["safe", "validated", "comprehensive"],
+        "estimatedTotalDuration": 79
+      }
+    },
+    {
+      "id": "wf_004_docs_generation",
+      "name": "Documentation Generation Workflow",
+      "description": "Generate and validate documentation for code changes",
+      "steps": [
+        {
+          "id": "step_001_analyze",
+          "name": "Analyze Code",
+          "agent": "docs",
+          "action": "analyzeCode",
+          "inputs": {
+            "targetFiles": "context.files"
+          },
+          "outputs": ["code-analysis.json"],
+          "dependencies": [],
+          "estimatedDuration": 8
+        },
+        {
+          "id": "step_002_generate",
+          "name": "Generate Documentation",
+          "agent": "docs",
+          "action": "generateDocs",
+          "inputs": {
+            "analysis": "step_001_analyze.outputs.analysis"
+          },
+          "outputs": ["documentation.md", "api-reference.json"],
+          "dependencies": ["step_001_analyze"],
+          "estimatedDuration": 15
+        },
+        {
+          "id": "step_003_validate",
+          "name": "Validate Documentation",
+          "agent": "qa",
+          "action": "validateDocs",
+          "inputs": {
+            "docs": "step_002_generate.outputs",
+            "code": "context.files"
+          },
+          "outputs": ["validation-report.json"],
+          "dependencies": ["step_002_generate"],
+          "estimatedDuration": 5
+        },
+        {
+          "id": "step_004_commit",
+          "name": "Commit Documentation",
+          "agent": "git-mcp",
+          "action": "commit",
+          "inputs": {
+            "changes": "step_002_generate.outputs",
+            "message": "docs: update documentation"
+          },
+          "outputs": ["commit-info.json"],
+          "dependencies": ["step_003_validate"],
+          "estimatedDuration": 1
+        }
+      ],
+      "config": {
+        "parallelExecution": false,
+        "errorStrategy": "continue",
+        "checkpointInterval": "step",
+        "retryPolicy": {
+          "maxRetries": 1,
+          "backoffMultiplier": 1
+        }
+      },
+      "metadata": {
+        "category": "documentation",
+        "tags": ["docs", "automated", "validation"],
+        "estimatedTotalDuration": 29
+      }
+    }
+  ],
+  "statistics": {
+    "totalWorkflows": 4,
+    "byCategory": {
+      "feature-development": 1,
+      "bugfix": 1,
+      "refactoring": 1,
+      "documentation": 1
+    },
+    "averageDuration": 52
+  }
+}

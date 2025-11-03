@@ -1,0 +1,217 @@
+{
+  "$schema": "../../schemas/agent-config-schema.json",
+  "description": "Example agent configurations for the SupaDupaCode CLI",
+  "version": "1.0.0",
+  "agents": [
+    {
+      "id": "agent_planner_001",
+      "name": "planner",
+      "type": "planner",
+      "capabilities": [
+        "planning",
+        "analysis",
+        "requirements-gathering",
+        "task-decomposition",
+        "dependency-resolution"
+      ],
+      "api": {
+        "provider": "openai",
+        "model": "gpt-4-turbo-preview",
+        "endpoint": "https://api.openai.com/v1",
+        "credentials": {
+          "apiKeyEnv": "OPENAI_API_KEY"
+        }
+      },
+      "tools": [
+        "plan-generator",
+        "dependency-analyzer",
+        "duration-estimator"
+      ],
+      "systemPrompt": "You are sdPlanner, the planning agent for SupaDupaCode CLI. Your role is to decompose feature requests into structured execution plans.",
+      "settings": {
+        "temperature": 0.7,
+        "maxTokens": 4000,
+        "defaultPlanSteps": ["analysis", "design", "implementation", "qa"],
+        "enableConstraintValidation": true
+      }
+    },
+    {
+      "id": "agent_coder_001",
+      "name": "coder",
+      "type": "coder",
+      "capabilities": [
+        "code-generation",
+        "refactoring",
+        "bug-fixing",
+        "code-review",
+        "implementation"
+      ],
+      "api": {
+        "provider": "anthropic",
+        "model": "claude-3-opus-20240229",
+        "endpoint": "https://api.anthropic.com/v1",
+        "credentials": {
+          "apiKeyEnv": "ANTHROPIC_API_KEY"
+        }
+      },
+      "tools": [
+        "code-generator",
+        "syntax-validator",
+        "test-generator",
+        "git-integration"
+      ],
+      "systemPrompt": "You are sdCoder, the implementation agent. You write clean, maintainable code following best practices and project conventions.",
+      "settings": {
+        "temperature": 0.3,
+        "maxTokens": 8000,
+        "codeStyle": "typescript-strict",
+        "enableSyntaxValidation": true,
+        "autoGenerateTests": true
+      }
+    },
+    {
+      "id": "agent_qa_001",
+      "name": "qa",
+      "type": "qa",
+      "capabilities": [
+        "test-generation",
+        "test-execution",
+        "coverage-analysis",
+        "bug-detection",
+        "quality-validation"
+      ],
+      "api": {
+        "provider": "openai",
+        "model": "gpt-4",
+        "endpoint": "https://api.openai.com/v1",
+        "credentials": {
+          "apiKeyEnv": "OPENAI_API_KEY"
+        }
+      },
+      "tools": [
+        "test-runner",
+        "coverage-analyzer",
+        "lint-checker",
+        "security-scanner"
+      ],
+      "systemPrompt": "You are sdQA, the quality assurance agent. You ensure code quality through comprehensive testing and validation.",
+      "settings": {
+        "temperature": 0.4,
+        "maxTokens": 4000,
+        "testFramework": "jest",
+        "coverageThreshold": 80,
+        "enableE2ETests": true
+      }
+    },
+    {
+      "id": "agent_docs_001",
+      "name": "docs",
+      "type": "docs",
+      "capabilities": [
+        "documentation-generation",
+        "api-reference-creation",
+        "example-generation",
+        "readme-updates"
+      ],
+      "api": {
+        "provider": "openai",
+        "model": "gpt-4-turbo-preview",
+        "endpoint": "https://api.openai.com/v1",
+        "credentials": {
+          "apiKeyEnv": "OPENAI_API_KEY"
+        }
+      },
+      "tools": [
+        "markdown-generator",
+        "api-doc-generator",
+        "example-builder"
+      ],
+      "systemPrompt": "You are sdDocs, the documentation agent. You create clear, comprehensive documentation that helps developers understand and use the code.",
+      "settings": {
+        "temperature": 0.6,
+        "maxTokens": 6000,
+        "docFormat": "markdown",
+        "includeExamples": true,
+        "generateApiReference": true
+      }
+    },
+    {
+      "id": "agent_brain_001",
+      "name": "brain",
+      "type": "brain",
+      "capabilities": [
+        "orchestration",
+        "decision-making",
+        "memory-management",
+        "learning",
+        "adaptation"
+      ],
+      "api": {
+        "provider": "anthropic",
+        "model": "claude-3-sonnet-20240229",
+        "endpoint": "https://api.anthropic.com/v1",
+        "credentials": {
+          "apiKeyEnv": "ANTHROPIC_API_KEY"
+        }
+      },
+      "tools": [
+        "agent-coordinator",
+        "memory-search",
+        "pattern-recognizer",
+        "decision-engine"
+      ],
+      "systemPrompt": "You are sdBrain, the orchestrator agent. You coordinate other agents, manage workflow execution, and learn from past experiences.",
+      "settings": {
+        "temperature": 0.5,
+        "maxTokens": 8000,
+        "enableLearning": true,
+        "memorySearchDepth": 10,
+        "adaptationMode": "continuous"
+      }
+    },
+    {
+      "id": "agent_custom_local",
+      "name": "local-assistant",
+      "type": "coder",
+      "capabilities": [
+        "code-generation",
+        "simple-refactoring"
+      ],
+      "api": {
+        "provider": "local",
+        "model": "qwen-coder-32b",
+        "endpoint": "http://localhost:11434/api/generate",
+        "credentials": {}
+      },
+      "tools": [
+        "code-generator"
+      ],
+      "systemPrompt": "You are a local coding assistant running on the user's machine. Generate efficient, concise code.",
+      "settings": {
+        "temperature": 0.2,
+        "maxTokens": 4000,
+        "localModelPath": "./models/qwen-coder-32b",
+        "enableGPUAcceleration": true
+      }
+    }
+  ],
+  "metadata": {
+    "totalAgents": 6,
+    "byType": {
+      "planner": 1,
+      "coder": 2,
+      "qa": 1,
+      "docs": 1,
+      "brain": 1
+    },
+    "byProvider": {
+      "openai": 3,
+      "anthropic": 2,
+      "local": 1
+    },
+    "requiredEnvironmentVariables": [
+      "OPENAI_API_KEY",
+      "ANTHROPIC_API_KEY"
+    ]
+  }
+}
