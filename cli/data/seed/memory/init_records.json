@@ -1,44 +1,326 @@
 {
+  "$schema": "../../schemas/memory-records-schema.json",
+  "description": "Initial seed data for memory repository - contains example solutions and patterns",
+  "version": "1.0.0",
   "records": [
     {
-      "id": "init-record-001",
-      "key": "default-context",
-      "category": "context",
+      "id": "mem_001_auth_jwt",
+      "key": "user-authentication-jwt",
+      "category": "solutions",
       "data": {
-        "projectType": "javascript",
-        "framework": "none",
-        "dependencies": [],
-        "config": {}
+        "problem": "Implement secure user authentication system",
+        "solution": "JWT-based authentication with refresh tokens",
+        "implementation": {
+          "technologies": ["JWT", "bcrypt", "TypeScript"],
+          "files": [
+            "src/auth/jwt-service.ts",
+            "src/auth/auth-middleware.ts",
+            "src/auth/token-manager.ts"
+          ],
+          "dependencies": ["jsonwebtoken@9.0.0", "bcrypt@5.1.0"],
+          "steps": [
+            "Create JWT service for token generation and validation",
+            "Implement bcrypt password hashing",
+            "Create authentication middleware",
+            "Add token refresh mechanism",
+            "Implement logout and token revocation"
+          ]
+        },
+        "testCoverage": 92,
+        "successRate": 0.95
       },
       "metadata": {
-        "agentOrigin": "system",
-        "tags": ["initial", "context"],
-        "timestamp": "2025-01-01T00:00:00.000Z"
+        "agentOrigin": "coder",
+        "tags": ["authentication", "security", "jwt", "nodejs"],
+        "timestamp": "2024-01-10T10:00:00.000Z",
+        "embeddingVector": null
       }
     },
     {
-      "id": "init-record-002",
-      "key": "common-solution-patterns",
+      "id": "mem_002_rest_api",
+      "key": "rest-api-express",
       "category": "solutions",
       "data": {
-        "patterns": [
-          {
-            "name": "error-handling",
-            "description": "Standard error handling approach",
-            "implementation": "// TODO: Implement standard error handling"
-          },
-          {
-            "name": "logging",
-            "description": "Standard logging approach",
-            "implementation": "// TODO: Implement standard logging"
+        "problem": "Create RESTful API with Express.js",
+        "solution": "Express.js with TypeScript, middleware pattern, and error handling",
+        "implementation": {
+          "technologies": ["Express", "TypeScript", "Helmet", "CORS"],
+          "files": [
+            "src/api/server.ts",
+            "src/api/routes/index.ts",
+            "src/api/middleware/error-handler.ts",
+            "src/api/controllers/base-controller.ts"
+          ],
+          "dependencies": ["express@4.18.0", "helmet@7.0.0", "cors@2.8.5"],
+          "steps": [
+            "Setup Express server with TypeScript",
+            "Configure middleware (helmet, cors, body-parser)",
+            "Create route structure",
+            "Implement error handling middleware",
+            "Add request logging",
+            "Setup validation with express-validator"
+          ]
+        },
+        "testCoverage": 88,
+        "successRate": 0.93
+      },
+      "metadata": {
+        "agentOrigin": "coder",
+        "tags": ["api", "express", "rest", "typescript", "nodejs"],
+        "timestamp": "2024-01-12T14:30:00.000Z",
+        "embeddingVector": null
+      }
+    },
+    {
+      "id": "mem_003_db_migration",
+      "key": "database-migration-pattern",
+      "category": "patterns",
+      "data": {
+        "pattern": "Database Migration Management",
+        "description": "Versioned database schema migrations with rollback support",
+        "bestPractices": [
+          "Use sequential numbering for migrations (001_, 002_, etc.)",
+          "Never modify existing migrations - create new ones",
+          "Include both up and down migrations",
+          "Test migrations in development before production",
+          "Keep migrations small and focused",
+          "Store migration history in database table"
+        ],
+        "implementation": {
+          "technologies": ["SQLite", "PostgreSQL", "Migration Runner"],
+          "example": {
+            "file": "migrations/001_create_users_table.sql",
+            "content": "-- Up migration\nCREATE TABLE users (\n  id INTEGER PRIMARY KEY,\n  email TEXT UNIQUE NOT NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- Down migration\nDROP TABLE users;"
           }
+        }
+      },
+      "metadata": {
+        "agentOrigin": "planner",
+        "tags": ["database", "migrations", "patterns", "best-practices"],
+        "timestamp": "2024-01-08T09:00:00.000Z",
+        "embeddingVector": null
+      }
+    },
+    {
+      "id": "mem_004_testing_strategy",
+      "key": "testing-pyramid-nodejs",
+      "category": "patterns",
+      "data": {
+        "pattern": "Testing Pyramid for Node.js Applications",
+        "description": "Comprehensive testing strategy following the testing pyramid",
+        "levels": {
+          "unit": {
+            "percentage": 70,
+            "tools": ["Jest", "Vitest", "Mocha"],
+            "focus": "Individual functions and classes",
+            "characteristics": ["Fast", "Isolated", "Deterministic"]
+          },
+          "integration": {
+            "percentage": 20,
+            "tools": ["Jest", "Supertest"],
+            "focus": "Component interactions, API endpoints, database queries",
+            "characteristics": ["Medium speed", "External dependencies", "Real integrations"]
+          },
+          "e2e": {
+            "percentage": 10,
+            "tools": ["Playwright", "Cypress", "Puppeteer"],
+            "focus": "Complete user workflows",
+            "characteristics": ["Slow", "Full system", "Real scenarios"]
+          }
+        },
+        "recommendations": [
+          "Start with unit tests for business logic",
+          "Use integration tests for critical paths",
+          "Limit E2E tests to core user journeys",
+          "Mock external services in unit tests",
+          "Use test fixtures and factories",
+          "Aim for 80%+ code coverage"
         ]
       },
       "metadata": {
-        "agentOrigin": "system",
-        "tags": ["initial", "solutions", "patterns"],
-        "timestamp": "2025-01-01T00:00:00.000Z"
+        "agentOrigin": "qa",
+        "tags": ["testing", "quality", "patterns", "best-practices", "nodejs"],
+        "timestamp": "2024-01-15T11:20:00.000Z",
+        "embeddingVector": null
+      }
+    },
+    {
+      "id": "mem_005_error_handling",
+      "key": "error-handling-nodejs",
+      "category": "solutions",
+      "data": {
+        "problem": "Implement consistent error handling in Node.js application",
+        "solution": "Custom error classes with centralized error middleware",
+        "implementation": {
+          "technologies": ["TypeScript", "Express", "Custom Error Classes"],
+          "files": [
+            "src/errors/app-error.ts",
+            "src/errors/validation-error.ts",
+            "src/errors/not-found-error.ts",
+            "src/middleware/error-handler.ts"
+          ],
+          "pattern": {
+            "description": "Create custom error classes extending Error base class",
+            "errorTypes": [
+              "ValidationError (400)",
+              "UnauthorizedError (401)",
+              "ForbiddenError (403)",
+              "NotFoundError (404)",
+              "ConflictError (409)",
+              "InternalServerError (500)"
+            ]
+          },
+          "steps": [
+            "Create base AppError class",
+            "Extend with specific error types",
+            "Implement global error handler middleware",
+            "Add error logging",
+            "Format error responses consistently",
+            "Handle async errors with wrapper"
+          ]
+        },
+        "testCoverage": 95,
+        "successRate": 0.97
+      },
+      "metadata": {
+        "agentOrigin": "coder",
+        "tags": ["error-handling", "middleware", "express", "typescript"],
+        "timestamp": "2024-01-18T16:45:00.000Z",
+        "embeddingVector": null
+      }
+    },
+    {
+      "id": "mem_006_cli_design",
+      "key": "cli-application-commander",
+      "category": "solutions",
+      "data": {
+        "problem": "Build command-line interface with subcommands and options",
+        "solution": "Commander.js with TypeScript for structured CLI",
+        "implementation": {
+          "technologies": ["Commander.js", "Chalk", "Ora", "Inquirer"],
+          "files": [
+            "src/cli/index.ts",
+            "src/commands/plan.ts",
+            "src/commands/run.ts",
+            "src/commands/status.ts",
+            "src/utils/logger.ts"
+          ],
+          "dependencies": [
+            "commander@11.0.0",
+            "chalk@5.3.0",
+            "ora@7.0.0",
+            "inquirer@9.2.0"
+          ],
+          "features": [
+            "Subcommand structure",
+            "Option parsing with validation",
+            "Interactive prompts",
+            "Progress indicators",
+            "Colored output",
+            "Help generation"
+          ]
+        },
+        "testCoverage": 85,
+        "successRate": 0.91
+      },
+      "metadata": {
+        "agentOrigin": "coder",
+        "tags": ["cli", "commander", "typescript", "nodejs"],
+        "timestamp": "2024-01-20T13:15:00.000Z",
+        "embeddingVector": null
+      }
+    },
+    {
+      "id": "mem_007_agent_pattern",
+      "key": "agent-architecture-pattern",
+      "category": "patterns",
+      "data": {
+        "pattern": "Multi-Agent Architecture Pattern",
+        "description": "Design pattern for autonomous agent systems with shared memory",
+        "components": {
+          "baseAgent": {
+            "responsibility": "Common agent interface and lifecycle",
+            "methods": ["initialize", "execute", "validate", "cleanup"]
+          },
+          "registry": {
+            "responsibility": "Agent registration and discovery",
+            "features": ["Dynamic registration", "Capability matching", "Load balancing"]
+          },
+          "memory": {
+            "responsibility": "Shared knowledge base",
+            "features": ["Persistent storage", "Vector search", "Cache management"]
+          },
+          "orchestrator": {
+            "responsibility": "Coordinate agent execution",
+            "features": ["Task routing", "Dependency management", "Error recovery"]
+          }
+        },
+        "bestPractices": [
+          "Use event-driven communication between agents",
+          "Implement circuit breaker for resilience",
+          "Store agent decisions in memory for learning",
+          "Use queues for asynchronous work",
+          "Implement health checks for agents",
+          "Log all agent interactions for debugging"
+        ]
+      },
+      "metadata": {
+        "agentOrigin": "planner",
+        "tags": ["architecture", "agents", "patterns", "design"],
+        "timestamp": "2024-01-22T10:00:00.000Z",
+        "embeddingVector": null
+      }
+    },
+    {
+      "id": "mem_008_git_automation",
+      "key": "git-automation-nodejs",
+      "category": "solutions",
+      "data": {
+        "problem": "Automate Git operations in Node.js application",
+        "solution": "Simple-git wrapper with conventional commits",
+        "implementation": {
+          "technologies": ["simple-git", "TypeScript"],
+          "files": [
+            "src/git/git-client.ts",
+            "src/git/branch-manager.ts",
+            "src/git/commit-generator.ts"
+          ],
+          "dependencies": ["simple-git@3.19.0"],
+          "operations": [
+            "Create feature branches",
+            "Stage and commit changes",
+            "Push to remote",
+            "Create pull requests",
+            "Tag releases"
+          ],
+          "commitConvention": {
+            "types": ["feat", "fix", "docs", "style", "refactor", "test", "chore"],
+            "format": "<type>(<scope>): <subject>",
+            "example": "feat(auth): add JWT authentication"
+          }
+        },
+        "testCoverage": 78,
+        "successRate": 0.89
+      },
+      "metadata": {
+        "agentOrigin": "coder",
+        "tags": ["git", "automation", "nodejs", "version-control"],
+        "timestamp": "2024-01-25T15:30:00.000Z",
+        "embeddingVector": null
       }
     }
-  ]
+  ],
+  "statistics": {
+    "totalRecords": 8,
+    "byCategory": {
+      "solutions": 5,
+      "patterns": 3
+    },
+    "byAgent": {
+      "coder": 5,
+      "planner": 2,
+      "qa": 1
+    },
+    "averageSuccessRate": 0.93
+  }
 }
