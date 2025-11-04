@@ -230,8 +230,14 @@ class TokenBucket {
     }
 
     const tokensNeeded = count - this.tokens;
-    const refillInterval = this.config.refillInterval || 1000;
-    return Math.ceil((tokensNeeded / this.config.refillRate) * refillInterval);
+    const refillRatePerSecond = this.config.refillRate;
+
+    if (refillRatePerSecond <= 0) {
+      return Infinity;
+    }
+
+    const millisecondsPerToken = 1000 / refillRatePerSecond;
+    return Math.ceil(tokensNeeded * millisecondsPerToken);
   }
 
   reset(): void {
@@ -242,9 +248,13 @@ class TokenBucket {
   private refill(): void {
     const now = Date.now();
     const timePassed = now - this.lastRefillTime;
-    const refillInterval = this.config.refillInterval || 1000;
-    const intervalsPassed = timePassed / refillInterval;
-    const tokensToAdd = intervalsPassed * this.config.refillRate;
+    const refillRatePerSecond = this.config.refillRate;
+    if (refillRatePerSecond <= 0) {
+      return;
+    }
+
+    const tokensPerMillisecond = refillRatePerSecond / 1000;
+    const tokensToAdd = timePassed * tokensPerMillisecond;
 
     if (tokensToAdd > 0) {
       this.tokens = Math.min(this.config.maxTokens, this.tokens + tokensToAdd);

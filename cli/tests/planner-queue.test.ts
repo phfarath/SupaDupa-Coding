@@ -53,15 +53,17 @@ describe('sdPlannerExecutionQueue', () => {
       assert.strictEqual(queue.size(), 1);
     });
 
-    test('should emit plan:enqueued event', (t, done) => {
+    test('should emit plan:enqueued event', async () => {
       const plan = createMockPlan('plan-event');
-      
-      queue.once('plan:enqueued', (item: any) => {
-        assert.strictEqual(item.plan.planId, 'plan-event');
-        done();
-      });
 
-      queue.enqueue(plan);
+      await new Promise<void>((resolve) => {
+        queue.once('plan:enqueued', (item: any) => {
+          assert.strictEqual(item.plan.planId, 'plan-event');
+          resolve();
+        });
+
+        queue.enqueue(plan);
+      });
     });
 
     test('should preserve metadata when enqueueing', () => {
@@ -116,16 +118,18 @@ describe('sdPlannerExecutionQueue', () => {
       assert.strictEqual(item, undefined);
     });
 
-    test('should emit plan:dequeued event', (t, done) => {
+    test('should emit plan:dequeued event', async () => {
       const plan = createMockPlan('plan-dequeue');
       queue.enqueue(plan);
 
-      queue.once('plan:dequeued', (item: any) => {
-        assert.strictEqual(item.plan.planId, 'plan-dequeue');
-        done();
-      });
+      await new Promise<void>((resolve) => {
+        queue.once('plan:dequeued', (item: any) => {
+          assert.strictEqual(item.plan.planId, 'plan-dequeue');
+          resolve();
+        });
 
-      queue.dequeue();
+        queue.dequeue();
+      });
     });
   });
 
@@ -238,15 +242,17 @@ describe('sdPlannerExecutionQueue', () => {
       assert.strictEqual(queue.size(), 1);
     });
 
-    test('should emit plan:removed event', (t, done) => {
+    test('should emit plan:removed event', async () => {
       queue.enqueue(createMockPlan('plan-remove'));
 
-      queue.once('plan:removed', (planId: string) => {
-        assert.strictEqual(planId, 'plan-remove');
-        done();
-      });
+      await new Promise<void>((resolve) => {
+        queue.once('plan:removed', (planId: string) => {
+          assert.strictEqual(planId, 'plan-remove');
+          resolve();
+        });
 
-      queue.removeByPlanId('plan-remove');
+        queue.removeByPlanId('plan-remove');
+      });
     });
   });
 
@@ -262,14 +268,16 @@ describe('sdPlannerExecutionQueue', () => {
       assert.strictEqual(queue.isEmpty(), true);
     });
 
-    test('should emit queue:cleared event', (t, done) => {
+    test('should emit queue:cleared event', async () => {
       queue.enqueue(createMockPlan('plan-1'));
 
-      queue.once('queue:cleared', () => {
-        done();
-      });
+      await new Promise<void>((resolve) => {
+        queue.once('queue:cleared', () => {
+          resolve();
+        });
 
-      queue.clear();
+        queue.clear();
+      });
     });
   });
 });
