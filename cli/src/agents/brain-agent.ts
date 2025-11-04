@@ -230,7 +230,7 @@ export class BrainAgent extends BaseAgent {
     }
 
     // Try to find an active provider, or use the first available
-    let providerId = activeProviders[0];
+    const providerId = activeProviders[0];
     const provider = this.providerRegistry.get(providerId);
     if (!provider) {
       throw new Error(`Provider ${providerId} not found`);

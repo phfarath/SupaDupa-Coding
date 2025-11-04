@@ -58,7 +58,7 @@ export class ProviderRegistry {
     await this.configManager.load();
     
     // Ensure providers section exists
-    let config = await this.configManager.show();
+    const config = await this.configManager.show();
     if (!config.providers) {
       config.providers = {
         active: null,
