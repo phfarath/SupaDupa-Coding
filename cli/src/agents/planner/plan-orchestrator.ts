@@ -333,7 +333,7 @@ export class sdPlannerOrchestrator extends EventEmitter {
 
   private validateInput(planInput: PlannerInputDTO): void {
     if (!planInput.request || planInput.request.trim().length === 0) {
-      throw new Error('PlannerInputDTO.request must be provided for plan generation.');
+      throw new Error('PlannerInputDTO.request must be provided and not empty for plan generation.');
     }
   }
 

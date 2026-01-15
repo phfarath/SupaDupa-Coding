@@ -278,13 +278,13 @@ describe('Planner + Memory + Queue Integration', () => {
     test('should reject empty request', async () => {
       await expect(
         orchestrator.createExecutionPlan({ request: '' })
-      ).rejects.toThrow('request must be provided');
+      ).rejects.toThrow('request must be provided and not empty');
     });
 
     test('should reject request with only whitespace', async () => {
       await expect(
         orchestrator.createExecutionPlan({ request: '   ' })
-      ).rejects.toThrow('request must be provided');
+      ).rejects.toThrow('request must be provided and not empty');
     });
 
     test('should handle memory errors gracefully', async () => {
