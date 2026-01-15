@@ -13,8 +13,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "build:watch": "tsc --project tsconfig.build.json --watch",
-    "dev": "tsc --watch & node dist/index.js",
-    "start": "node dist/index.js",
+    "dev": "tsc --watch & node dist/src/index.js",
+    "start": "node dist/src/index.js",
     "start:dev": "ts-node src/index.ts",
     "start:api": "ts-node src/api-server.ts",
     "start:api:prod": "npm run build && node dist/src/api-server.js",

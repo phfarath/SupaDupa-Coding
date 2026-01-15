@@ -13,6 +13,7 @@ export class ProgressUI {
   private agents: Map<string, AgentProgress> = new Map();
   private multibar?: cliProgress.MultiBar;
   private currentSection?: string;
+  private streamBuffer: string = '';
 
   constructor() {
     // Inicializar multibar para progress bars
@@ -39,6 +40,11 @@ export class ProgressUI {
       status: 'running',
       startTime: Date.now(),
     });
+
+    // Reset stream buffer for new task
+    if (agentName === 'brain') {
+      this.resetStreamBuffer();
+    }
   }
 
   /**
@@ -53,11 +59,46 @@ export class ProgressUI {
   }
 
   /**
+   * Updates streaming thinking process
+   */
+  streamUpdate(text: string): void {
+    if (this.currentSection) {
+      if (this.agents.size > 0 && this.agents.get('brain')) {
+        // If brain agent is running (planning phase), update its spinner
+        const agent = this.agents.get('brain');
+        if (agent && agent.spinner) {
+          // Accumulate buffer
+          this.streamBuffer += text;
+
+          // Get last 60 chars for "scrolling" effect
+          const cleanBuffer = this.streamBuffer.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').trim();
+          const windowSize = 60;
+          const displayWindow = cleanBuffer.length > windowSize
+            ? '...' + cleanBuffer.slice(-windowSize)
+            : cleanBuffer;
+
+          agent.spinner.text = `${chalk.cyan('🧠 Brain')}: ${chalk.gray(displayWindow)}`;
+        }
+      } else {
+        // Fallback if no brain agent spinner
+        process.stdout.write(text);
+      }
+    }
+  }
+
+  /**
+   * Limpa o buffer de stream
+   */
+  resetStreamBuffer(): void {
+    this.streamBuffer = '';
+  }
+
+  /**
    * Cria uma progress bar para um agente
    */
   createAgentProgressBar(agentName: string, total: number, task: string): void {
     const agent = this.agents.get(agentName);
-    
+
     // Parar spinner se existir
     if (agent?.spinner) {
       agent.spinner.stop();
@@ -98,7 +139,7 @@ export class ProgressUI {
 
     if (agent.spinner) {
       agent.spinner.succeed(
-        chalk.green(`${emoji} ${agentName}: ${result}`) + 
+        chalk.green(`${emoji} ${agentName}: ${result}`) +
         chalk.gray(` (${durationText})`)
       );
     }

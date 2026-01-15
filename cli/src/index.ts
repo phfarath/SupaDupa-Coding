@@ -188,9 +188,52 @@ program.configureOutput({
   outputError: (str: string, write: (str: string) => void) => write(chalk.red(str))
 });
 
-program.parse(process.argv);
-
-// Show help if no command provided
+// Show interactive menu if no command provided
 if (!process.argv.slice(2).length) {
-  program.outputHelp();
+  import('inquirer').then(async ({ default: inquirer }) => {
+    console.clear();
+    console.log(chalk.bold.cyan('╔══════════════════════════════════════════════════════════╗'));
+    console.log(chalk.bold.cyan('║') + '             ' + chalk.bold.white('🚀 SupaDupaCode CLI') + '                      ' + chalk.bold.cyan('║'));
+    console.log(chalk.bold.cyan('║') + '        ' + chalk.white('AI-Powered Development Orchestrator') + '               ' + chalk.bold.cyan('║'));
+    console.log(chalk.bold.cyan('╚══════════════════════════════════════════════════════════╝'));
+    console.log('');
+
+    const { action } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'What would you like to do?',
+        choices: [
+          { name: '💬 Chat with Brain Agent', value: 'chat' },
+          { name: '📋 Plan a new Feature', value: 'plan' },
+          { name: '⚙️  Setup / Configure', value: 'setup' },
+          { name: '❌ Exit', value: 'exit' }
+        ]
+      }
+    ]);
+
+    switch (action) {
+      case 'chat':
+        await import('./commands/chat.js').then(m => m.createChatCommand().parseAsync(['node', 'script', 'chat']));
+        break;
+      case 'plan':
+        const { description } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'description',
+            message: 'Describe the feature you want to plan:'
+          }
+        ]);
+        await planCommand(description, { output: 'text' });
+        break;
+      case 'setup':
+        await import('./commands/setup.js').then(m => m.createSetupCommand().parseAsync(['node', 'script', 'setup']));
+        break;
+      case 'exit':
+        console.log("Goodbye!");
+        process.exit(0);
+    }
+  });
+} else {
+  program.parse(process.argv);
 }

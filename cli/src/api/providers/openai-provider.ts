@@ -13,7 +13,7 @@ export class sdOpenAIProvider extends sdBaseProvider {
   constructor(config: ProviderConfig) {
     super(config);
     this.baseUrl = config.endpoint || 'https://api.openai.com/v1';
-    
+
     if (!config.credentials.apiKey) {
       throw new Error('OpenAI API key is required');
     }
@@ -90,7 +90,7 @@ export class sdOpenAIProvider extends sdBaseProvider {
       };
 
       const response = await this.makeRequest(testRequest);
-      
+
       return {
         success: true,
         data: {
@@ -112,7 +112,7 @@ export class sdOpenAIProvider extends sdBaseProvider {
 
   async getStatus(): Promise<ProviderStatus> {
     const testResult = await this.test();
-    
+
     return {
       providerId: `openai-${this.config.model}`,
       status: testResult.success ? 'online' : 'offline',
@@ -133,6 +133,7 @@ export class sdOpenAIProvider extends sdBaseProvider {
         role: msg.role,
         content: msg.content
       })),
+      stream: request.stream,
       ...this.mergeParameters(request.parameters)
     };
 
@@ -150,6 +151,65 @@ export class sdOpenAIProvider extends sdBaseProvider {
       (error as any).status = response.status;
       (error as any).type = errorData.error?.type || 'api_error';
       throw error;
+    }
+
+    if (request.stream && request.onChunk) {
+      // Handle streaming response
+      const readable = response.body;
+      if (!readable) throw new Error('Response body is null');
+
+      let fullContent = '';
+
+      // Use efficient buffer handling for stream
+      try {
+        // @ts-ignore - node-fetch specific buffer integration
+        for await (const chunk of readable) {
+          const lines = chunk.toString().split('\n').filter((line: string) => line.trim() !== '');
+
+          for (const line of lines) {
+            const message = line.replace(/^data: /, '');
+
+            if (message === '[DONE]') break;
+
+            try {
+              const parsed = JSON.parse(message);
+              const content = parsed.choices[0]?.delta?.content;
+
+              if (content) {
+                request.onChunk(content);
+                fullContent += content;
+              }
+            } catch (e) {
+              // Ignore partial JSON parse errors
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Error reading stream:', error);
+      }
+
+      // Return pseudo-response for compatibility
+      return {
+        id: `chatcmpl-${Date.now()}`,
+        object: 'chat.completion',
+        created: Date.now(),
+        model: payload.model,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: fullContent
+            },
+            finish_reason: 'stop'
+          }
+        ],
+        usage: {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0
+        }
+      };
     }
 
     return response.json();

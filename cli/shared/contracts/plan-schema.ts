@@ -43,16 +43,20 @@ export interface PlannerInputDTO {
     maxCost?: number;
     allowedAgents?: string[];
     forbiddenAgents?: string[];
+    requiredAgents?: string[];
+    deadline?: string;
   };
   preferences?: {
     prioritizeSpeed?: boolean;
     prioritizeQuality?: boolean;
     minimizeCost?: boolean;
+    preferredAgents?: string[];
   };
   metadata?: {
     source: string;
     urgency: 'low' | 'medium' | 'high';
     category: string;
+    tags?: string[];
   };
 }
 

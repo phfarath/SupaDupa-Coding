@@ -196,10 +196,10 @@ Brain: {
 }
 ```
 
-**IMPORTANT**: 
 - Do NOT include the `steps` field in your response
 - Do NOT wrap JSON in markdown code blocks
 - Do NOT add any text before or after the JSON
+- ALL property names and string values MUST be double-quoted. Example: "complexity": "high", NOT "complexity": high
 - The entire response must be valid JSON that can be parsed directly
 - If you're unsure, always default to "chat" type for simple questions
 

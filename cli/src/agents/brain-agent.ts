@@ -9,6 +9,7 @@ import { sdPlannerOrchestrator } from './planner/plan-orchestrator';
 import { PlannerInputDTO } from '../../shared/contracts/plan-schema';
 import fs from 'fs/promises';
 import path from 'path';
+import chalk from 'chalk';
 
 // Custom error for casual conversations
 class CasualConversationResponse extends Error {
@@ -84,10 +85,10 @@ export class BrainAgent extends BaseAgent {
       // The provider registry now handles loading from unified config
       // Just check if we have any providers
       const providers = this.providerRegistry.list();
-      
+
       if (providers.length === 0) {
         console.warn('No providers configured. Run "supadupacode setup" or "supadupacode provider add" to configure providers.');
-        
+
         // Set up default OpenAI provider from environment if available
         if (process.env.OPENAI_API_KEY) {
           await this.providerRegistry.register('openai', {
@@ -127,16 +128,21 @@ export class BrainAgent extends BaseAgent {
 
       // Tentar analisar o prompt
       let analysis: ExecutionStrategy;
-      
+
       try {
         progressUI.startSection('🧠 Analisando requisito...');
+        progressUI.startAgentWork('brain', 'Thinking...');
+
         analysis = await this.analyzePrompt(userPrompt, progressUI);
+
+        progressUI.completeAgent('brain', 'Analysis complete');
       } catch (error) {
+        progressUI.failAgent('brain', 'Analysis failed');
         // Se for conversa casual, responder diretamente
         if (error instanceof CasualConversationResponse) {
           progressUI.endSection();
           console.log('\n' + error.response + '\n');
-          
+
           return {
             type: 'chat',
             message: error.response,
@@ -146,7 +152,7 @@ export class BrainAgent extends BaseAgent {
         }
         throw error;
       }
-      
+
       progressUI.addSectionItem(`Intent: ${analysis.intent}`);
       progressUI.addSectionItem(`Complexidade: ${analysis.complexity}`);
       progressUI.addSectionItem(`Agentes necessários: ${analysis.steps.map(s => s.agent).join(', ')}`);
@@ -169,7 +175,7 @@ export class BrainAgent extends BaseAgent {
 
       // Executar estratégia
       progressUI.showSeparator();
-      
+
       const result = await this.executeStrategy(analysis, progressUI, userPrompt);
 
       const duration = Date.now() - startTime;
@@ -190,12 +196,12 @@ export class BrainAgent extends BaseAgent {
 
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Não mostrar erro para conversas casuais
       if (!(error instanceof CasualConversationResponse)) {
         progressUI.error(`Erro ao processar: ${(error as Error).message}`);
       }
-      
+
       return {
         success: false,
         error: (error as Error).message,
@@ -208,21 +214,21 @@ export class BrainAgent extends BaseAgent {
     // Tentar usar LLM real primeiro
     if (this.useLLM) {
       try {
-        return await this.analyzeWithLLM(prompt);
+        return await this.analyzeWithLLM(prompt, progressUI);
       } catch (error) {
         console.warn('LLM analysis failed, falling back to keyword analysis:', (error as Error).message);
         this.useLLM = false; // Desabilitar LLM para próximas tentativas nesta sessão
       }
     }
-    
+
     // Fallback: análise por keywords (modo atual)
     return await this.analyzeWithKeywords(prompt);
   }
 
-  private async analyzeWithLLM(prompt: string): Promise<ExecutionStrategy> {
+  private async analyzeWithLLM(prompt: string, progressUI?: ProgressUI): Promise<ExecutionStrategy> {
     // Carregar system prompt
     const systemPrompt = await this.loadSystemPrompt();
-    
+
     // Get active provider
     const activeProviders = this.providerRegistry.list();
     if (activeProviders.length === 0) {
@@ -244,14 +250,22 @@ export class BrainAgent extends BaseAgent {
     }
 
     // Fazer chamada ao LLM usando novo sistema
+    // Fazer chamada ao LLM usando novo sistema
     const llmRequest = {
       messages: [
         { role: 'system' as const, content: systemPrompt },
         { role: 'user' as const, content: prompt }
       ],
+      stream: true,
+      onChunk: (chunk: string) => {
+        // Update UI with thought process
+        if (progressUI) {
+          progressUI.streamUpdate(chalk.gray(chunk));
+        }
+      },
       parameters: {
         temperature: 0.3, // Mais determinístico para análise
-        maxTokens: 500
+        maxTokens: 1000
       }
     };
 
@@ -267,7 +281,7 @@ export class BrainAgent extends BaseAgent {
       } else if (cleanContent.startsWith('```')) {
         cleanContent = cleanContent.replace(/```\n?/, '').replace(/\n?```$/, '');
       }
-      
+
       analysis = JSON.parse(cleanContent);
     } catch (error) {
       console.debug('Raw LLM response:', response.content);
@@ -282,7 +296,7 @@ export class BrainAgent extends BaseAgent {
     // Se for task, converter para ExecutionStrategy
     if (analysis.type === 'task') {
       const steps = this.createStepsFromAnalysis(analysis);
-      
+
       return {
         intent: analysis.intent,
         mode: analysis.mode,
@@ -300,17 +314,17 @@ export class BrainAgent extends BaseAgent {
   private async analyzeWithKeywords(prompt: string): Promise<ExecutionStrategy> {
     // Análise simples baseada em keywords (fallback)
     const promptLower = prompt.toLowerCase();
-    
+
     // Simple heuristic for casual conversation vs task
     const words = prompt.split(' ').length;
     const hasQuestionWords = /\b(what|how|why|when|where|who|qual|como|por que|onde|quando|quem)\b/i.test(prompt);
     const hasTaskWords = /\b(create|implement|build|add|fix|correct|criar|implementar|construir|adicionar|corrigir|desenvolver)\b/i.test(prompt);
-    
+
     // If it's short and doesn't contain task words, treat as casual
     if (words <= 5 && !hasTaskWords) {
       throw new CasualConversationResponse(this.generateCasualResponse(prompt));
     }
-    
+
     // Determinar intent
     let intent: ExecutionStrategy['intent'] = 'implementation';
     if (promptLower.includes('planejar') || promptLower.includes('arquitetura') || promptLower.includes('design')) {
@@ -356,13 +370,13 @@ export class BrainAgent extends BaseAgent {
   private createStepsFromAnalysis(analysis: any): ExecutionStep[] {
     // Criar steps baseado na análise do LLM
     const steps: ExecutionStep[] = [];
-    
+
     analysis.agents.forEach((agentName: string, index: number) => {
       const stepId = `step-${index + 1}`;
-      const dependencies = index > 0 && analysis.mode === 'sequential' 
-        ? [`step-${index}`] 
+      const dependencies = index > 0 && analysis.mode === 'sequential'
+        ? [`step-${index}`]
         : [];
-      
+
       steps.push({
         id: stepId,
         agent: agentName,
@@ -372,7 +386,7 @@ export class BrainAgent extends BaseAgent {
         estimatedDuration: this.estimateDuration(analysis.complexity) / analysis.agents.length,
       });
     });
-    
+
     return steps;
   }
 
@@ -407,7 +421,7 @@ export class BrainAgent extends BaseAgent {
         documentation: 'Criar documentação',
       },
     };
-    
+
     return taskMap[agentName]?.[intent] || `Executar tarefa (${intent})`;
   }
 
@@ -584,7 +598,7 @@ export class BrainAgent extends BaseAgent {
   private async executeParallel(steps: ExecutionStep[], progressUI: ProgressUI, userPrompt: string): Promise<any> {
     // Criar DAG de dependências
     const levels = this.createDependencyLevels(steps);
-    
+
     const results: any[] = [];
     const filesModified: string[] = [];
     let testsRun = 0;
@@ -681,7 +695,7 @@ export class BrainAgent extends BaseAgent {
             urgency: 'medium',
           },
         };
-        
+
         const plan = await this.plannerOrchestrator.createExecutionPlan(planInput);
         return { plan, success: true };
       } catch (error) {
@@ -744,7 +758,7 @@ export class BrainAgent extends BaseAgent {
 
   private generateCasualResponse(prompt: string): string {
     const promptLower = prompt.toLowerCase();
-    
+
     if (promptLower.includes('ola') || promptLower.includes('olá') || promptLower.includes('oi')) {
       return `Olá! 👋 Sou o Brain Agent, seu orquestrador inteligente.
 
@@ -757,11 +771,11 @@ Posso te ajudar com:
 
 Como posso te ajudar hoje?`;
     }
-    
+
     if (promptLower.includes('obrigado') || promptLower.includes('valeu')) {
       return 'De nada! 😊 Estou aqui sempre que precisar!';
     }
-    
+
     if (promptLower.includes('quem é você') || promptLower.includes('o que você faz')) {
       return `Sou o Brain Agent 🧠, o orquestrador inteligente do SupaDupaCode.
 
@@ -773,7 +787,7 @@ Meu trabalho é:
 
 Estou pronto para ajudar! O que você gostaria de fazer?`;
     }
-    
+
     return 'Olá! Como posso te ajudar?';
   }
 

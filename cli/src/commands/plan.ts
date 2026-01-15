@@ -29,48 +29,61 @@ interface Plan {
   tasks: PlanTask[];
 }
 
+import { SessionManager } from '../core/session-manager';
+import { BrainAgent } from '../agents/brain-agent';
+import { ProgressUI } from '../ui/progress-ui';
+
 export async function planCommand(description: string, options: PlanCommandOptions) {
-  const spinner = ora('Analyzing feature description...').start();
-  
+  const spinner = ora('Initializing planner...').start();
+
   try {
-    // Load configuration
-    const configManager = new ConfigManager();
-    const config = await configManager.load();
+    // Initialize session
+    const sessionManager = new SessionManager({
+      workspacePath: process.cwd(),
+      autoApprove: true // For planning we just want the plan
+    });
+    await sessionManager.initialize();
 
-    // Initialize orchestrator
-    const orchestrator = new Orchestrator(config.orchestration);
+    // Initialize Brain Agent
+    const brainAgent = new BrainAgent({
+      name: 'brain',
+      sessionManager,
+      activeAgents: ['planner', 'developer', 'qa']
+    });
+    await brainAgent.initialize();
 
-    spinner.text = 'Creating execution plan...';
+    spinner.text = 'Analyzing requirements with AI...';
 
-    // Create plan - using a mock implementation since the actual orchestrator functionality isn't specified
+    // Create a progress UI that won't interfere too much with CLI output
+    const progressUI = new ProgressUI();
+
+    // Stop local spinner to let BrainAgent handle the UI
+    spinner.stop();
+
+    // Process the request
+    const response = await brainAgent.processPrompt(description, progressUI);
+
+    if (response.type !== 'task' || !response.strategy) {
+      spinner.fail('Failed to generate a valid plan');
+      if (response.message) console.log(chalk.yellow(response.message));
+      return;
+    }
+
+    const strategy = response.strategy;
+
+    // Convert to Plan format
     const plan: Plan = {
-      id: `plan-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      description,
-      orchestrationPattern: config.orchestration?.defaultMode || 'sequential',
+      id: `plan-${Date.now()}`,
+      description: strategy.description,
+      orchestrationPattern: strategy.mode,
       createdAt: new Date().toISOString(),
-      tasks: [
-        {
-          name: 'analyze-requirements',
-          agent: 'planner',
-          type: 'analysis',
-          description: 'Analyze requirements for the feature',
-          dependencies: []
-        },
-        {
-          name: 'create-implementation',
-          agent: 'developer',
-          type: 'implementation',
-          description: 'Implement the required functionality',
-          dependencies: ['analyze-requirements']
-        },
-        {
-          name: 'run-tests',
-          agent: 'qa',
-          type: 'testing',
-          description: 'Test the implementation',
-          dependencies: ['create-implementation']
-        }
-      ]
+      tasks: strategy.steps.map(step => ({
+        name: step.id,
+        agent: step.agent,
+        type: 'task',
+        description: step.task,
+        dependencies: step.dependencies
+      }))
     };
 
     spinner.succeed('Plan created successfully!');
@@ -78,20 +91,19 @@ export async function planCommand(description: string, options: PlanCommandOptio
     // Display plan
     console.log('\n' + chalk.bold.cyan('Feature Plan'));
     console.log(chalk.gray('─'.repeat(50)));
-    console.log(chalk.bold('Description:'), description);
+    console.log(chalk.bold('Description:'), plan.description);
     console.log(chalk.bold('Plan ID:'), plan.id);
     console.log(chalk.bold('Orchestration:'), plan.orchestrationPattern);
     console.log(chalk.bold('Created:'), new Date(plan.createdAt).toLocaleString());
-    
+
     console.log('\n' + chalk.bold.cyan('Tasks'));
     console.log(chalk.gray('─'.repeat(50)));
-    
+
     for (const task of plan.tasks) {
       console.log(chalk.yellow('●'), chalk.bold(task.name));
       console.log('  ', chalk.gray('Agent:'), task.agent);
-      console.log('  ', chalk.gray('Type:'), task.type);
       console.log('  ', chalk.gray('Description:'), task.description);
-      
+
       if (task.dependencies.length > 0) {
         console.log('  ', chalk.gray('Dependencies:'), task.dependencies.join(', '));
       }
@@ -109,7 +121,7 @@ export async function planCommand(description: string, options: PlanCommandOptio
     const fs = await import('fs/promises');
     const planFile = `plan-${plan.id}.json`;
     await fs.writeFile(planFile, JSON.stringify(plan, null, 2));
-    
+
     console.log(chalk.green('✓'), `Plan saved to ${planFile}`);
     console.log(chalk.blue('ℹ'), `Run with: ${chalk.bold(`supadupacode run --plan ${planFile}`)}`);
 

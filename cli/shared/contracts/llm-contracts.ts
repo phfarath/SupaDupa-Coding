@@ -7,10 +7,10 @@
 export interface LlmMessage {
   /** Message role */
   role: 'system' | 'user' | 'assistant';
-  
+
   /** Message content */
   content: string;
-  
+
   /** Optional message metadata */
   metadata?: {
     timestamp?: string;
@@ -26,43 +26,43 @@ export interface LlmMessage {
 export interface ProviderConfig {
   /** Provider name for display */
   name?: string;
-  
+
   /** Provider type */
   type: 'openai' | 'anthropic' | 'local';
-  
+
   /** Model identifier */
   model: string;
-  
+
   /** API endpoint (optional for some providers) */
   endpoint?: string;
-  
+
   /** Authentication credentials */
   credentials: {
     /** API key or token */
     apiKey?: string;
-    
+
     /** Additional authentication parameters */
     [key: string]: any;
   };
-  
+
   /** Provider-specific settings */
   settings?: {
     /** Request timeout in milliseconds */
     timeout?: number;
-    
+
     /** Maximum retry attempts */
     maxRetries?: number;
-    
+
     /** Rate limiting settings */
     rateLimit?: {
       requestsPerSecond?: number;
       tokensPerMinute?: number;
     };
-    
+
     /** Additional provider-specific settings */
     [key: string]: any;
   };
-  
+
   /** Default generation parameters */
   defaultParameters?: {
     temperature?: number;
@@ -81,37 +81,43 @@ export interface ProviderConfig {
 export interface LlmRequest {
   /** Messages in the conversation */
   messages: LlmMessage[];
-  
+
   /** Model to use for generation */
   model?: string;
-  
+
+  /** Whether to stream the response */
+  stream?: boolean;
+
+  /** Callback for streaming chunks */
+  onChunk?: (chunk: string) => void;
+
   /** Generation parameters */
   parameters?: {
     /** Sampling temperature (0.0 to 2.0) */
     temperature?: number;
-    
+
     /** Maximum tokens to generate */
     maxTokens?: number;
-    
+
     /** Nucleus sampling parameter (0.0 to 1.0) */
     topP?: number;
-    
+
     /** Frequency penalty (-2.0 to 2.0) */
     frequencyPenalty?: number;
-    
+
     /** Presence penalty (-2.0 to 2.0) */
     presencePenalty?: number;
-    
+
     /** Stop sequences */
     stop?: string[];
-    
+
     /** Number of completions to generate */
     n?: number;
-    
+
     /** Logit bias for specific tokens */
     logitBias?: Record<string, number>;
   };
-  
+
   /** Request metadata */
   metadata?: {
     requestId?: string;
@@ -129,17 +135,17 @@ export interface LlmRequest {
 export interface LlmResponse {
   /** Generated content */
   content: string;
-  
+
   /** Model used for generation */
   model: string;
-  
+
   /** Usage statistics */
   usage?: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
   };
-  
+
   /** Generation metadata */
   metadata?: {
     finishReason?: 'stop' | 'length' | 'content_filter' | 'function_call' | 'tool_calls';
@@ -148,7 +154,7 @@ export interface LlmResponse {
     latency?: number;
     cacheHit?: boolean;
   };
-  
+
   /** Error information if the request failed */
   error?: {
     code: string;
@@ -156,7 +162,7 @@ export interface LlmResponse {
     type: string;
     retryable?: boolean;
   };
-  
+
   /** Additional provider-specific data */
   providerData?: any;
 }
@@ -170,10 +176,10 @@ export interface LlmResponse {
 export interface ProviderStatus {
   /** Provider identifier */
   providerId: string;
-  
+
   /** Current status */
   status: 'online' | 'offline' | 'error' | 'rate_limited' | 'maintenance';
-  
+
   /** Health metrics */
   metrics: {
     responseTime?: number;
@@ -182,7 +188,7 @@ export interface ProviderStatus {
     lastError?: string;
     lastCheck?: string;
   };
-  
+
   /** Rate limiting information */
   rateLimit?: {
     requestsRemaining?: number;
@@ -198,25 +204,25 @@ export interface ProviderStatus {
 export interface ProviderDetails {
   /** Provider identifier */
   id: string;
-  
+
   /** Display name */
   name: string;
-  
+
   /** Provider type */
   type: 'openai' | 'anthropic' | 'local';
-  
+
   /** Model name */
   model?: string;
-  
+
   /** API endpoint */
   endpoint?: string;
-  
+
   /** Whether provider is active */
   active: boolean;
-  
+
   /** Whether API key is configured */
   hasKey: boolean;
-  
+
   /** Creation timestamp */
   created_at: string;
 }
