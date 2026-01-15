@@ -10,6 +10,8 @@ import {
 import { SD_API_EVENTS } from '../../constants/api-events';
 import { logger } from '../../utils/logger';
 import { plannerExecutionQueue, PlannerQueueItemMetadata } from './queue';
+import { sdLlmClientFactory } from '../../config/llm';
+import { LlmRequest, LlmMessage } from '../../../shared/contracts/llm-contracts';
 
 interface PlannerOrchestratorConfig {
   promptPath?: string;
@@ -42,10 +44,20 @@ export class sdPlannerOrchestrator extends EventEmitter {
     return this.systemPrompt;
   }
 
-  createExecutionPlan(planInput: PlannerInputDTO): PlannerPlanDTO {
+  async createExecutionPlan(planInput: PlannerInputDTO): Promise<PlannerPlanDTO> {
     this.validateInput(planInput);
 
-    const plan = this.composePlan(planInput);
+    // Try to use LLM-based planning, fall back to hardcoded planning if it fails
+    let plan: PlannerPlanDTO;
+    try {
+      plan = await this.generatePlanWithLLM(planInput);
+      logger.info('Plan generated successfully using LLM');
+    } catch (error) {
+      logger.warn('LLM-based planning failed, falling back to hardcoded planning', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      plan = this.composePlan(planInput);
+    }
 
     const enqueueMetadata: PlannerQueueItemMetadata = {
       request: planInput.request,
@@ -62,6 +74,261 @@ export class sdPlannerOrchestrator extends EventEmitter {
     this.emit(SD_API_EVENTS.EVENT_PLAN_CREATED, { plan });
 
     return plan;
+  }
+
+  /**
+   * Generates a plan using LLM API.
+   * Throws an error if LLM call fails or returns invalid JSON.
+   */
+  private async generatePlanWithLLM(planInput: PlannerInputDTO): Promise<PlannerPlanDTO> {
+    // Initialize LLM factory
+    const factory = sdLlmClientFactory.getInstance();
+    await factory.initialize();
+
+    // Get the registry to execute LLM requests
+    const registry = factory.getRegistry();
+
+    // Try to get the default provider (prefer openai-default or anthropic-default)
+    let providerId = factory.getDefaultProviderId();
+    const availableProviders = registry.list();
+
+    // If default provider is not available, try alternatives
+    if (!availableProviders.includes(providerId)) {
+      // Try openai-default first
+      if (availableProviders.includes('openai-default')) {
+        providerId = 'openai-default';
+      } else if (availableProviders.includes('anthropic-default')) {
+        providerId = 'anthropic-default';
+      } else if (availableProviders.length > 0) {
+        // Use first available provider
+        providerId = availableProviders[0];
+      } else {
+        throw new Error('No LLM providers available. Please configure at least one provider.');
+      }
+    }
+
+    logger.info(`Using LLM provider: ${providerId}`);
+
+    // Construct the user message with the planInput
+    const userMessage = this.constructUserMessage(planInput);
+
+    // Build the LLM request
+    const messages: LlmMessage[] = [
+      {
+        role: 'system',
+        content: this.systemPrompt,
+      },
+      {
+        role: 'user',
+        content: userMessage,
+      },
+    ];
+
+    const llmRequest: LlmRequest = {
+      messages,
+      parameters: {
+        temperature: 0.7,
+        maxTokens: 4096,
+      },
+      metadata: {
+        agentId: 'planner',
+        taskType: 'plan-generation',
+        timeout: 30000,
+      },
+    };
+
+    // Execute the LLM request
+    const response = await registry.execute(providerId, llmRequest);
+
+    // Check for errors in the response
+    if (response.error) {
+      throw new Error(`LLM API error: ${response.error.message}`);
+    }
+
+    // Parse the JSON response
+    const plan = this.parseLLMResponse(response.content);
+
+    // Validate the parsed plan
+    this.validateGeneratedPlan(plan);
+
+    return plan;
+  }
+
+  /**
+   * Constructs a user message from PlannerInputDTO for the LLM.
+   */
+  private constructUserMessage(planInput: PlannerInputDTO): string {
+    const parts: string[] = [];
+
+    parts.push(`## Feature Request`);
+    parts.push(planInput.request);
+    parts.push('');
+
+    if (planInput.context) {
+      parts.push(`## Context`);
+      if (planInput.context.techStack) {
+        const techStack = Array.isArray(planInput.context.techStack)
+          ? planInput.context.techStack.join(', ')
+          : planInput.context.techStack;
+        parts.push(`**Tech Stack:** ${techStack}`);
+      }
+      if (planInput.context.projectType) {
+        parts.push(`**Project Type:** ${planInput.context.projectType}`);
+      }
+      if (planInput.context.existingArtifacts && planInput.context.existingArtifacts.length > 0) {
+        parts.push(`**Existing Artifacts:** ${planInput.context.existingArtifacts.join(', ')}`);
+      }
+      if (planInput.context.constraints && planInput.context.constraints.length > 0) {
+        parts.push(`**Constraints:** ${planInput.context.constraints.join(', ')}`);
+      }
+      parts.push('');
+    }
+
+    if (planInput.preferences) {
+      parts.push(`## Preferences`);
+      if (planInput.preferences.prioritizeSpeed) {
+        parts.push('- Prioritize speed');
+      }
+      if (planInput.preferences.prioritizeQuality) {
+        parts.push('- Prioritize quality');
+      }
+      if (planInput.preferences.minimizeCost) {
+        parts.push('- Minimize cost');
+      }
+      if (planInput.preferences.preferredAgents && planInput.preferences.preferredAgents.length > 0) {
+        parts.push(`- Preferred agents: ${planInput.preferences.preferredAgents.join(', ')}`);
+      }
+      parts.push('');
+    }
+
+    if (planInput.constraints) {
+      parts.push(`## Hard Constraints`);
+      if (planInput.constraints.maxDuration) {
+        parts.push(`- Maximum duration: ${planInput.constraints.maxDuration} minutes`);
+      }
+      if (planInput.constraints.forbiddenAgents && planInput.constraints.forbiddenAgents.length > 0) {
+        parts.push(`- Forbidden agents: ${planInput.constraints.forbiddenAgents.join(', ')}`);
+      }
+      if (planInput.constraints.requiredAgents && planInput.constraints.requiredAgents.length > 0) {
+        parts.push(`- Required agents: ${planInput.constraints.requiredAgents.join(', ')}`);
+      }
+      if (planInput.constraints.deadline) {
+        parts.push(`- Deadline: ${planInput.constraints.deadline}`);
+      }
+      parts.push('');
+    }
+
+    if (planInput.metadata) {
+      parts.push(`## Metadata`);
+      if (planInput.metadata.urgency) {
+        parts.push(`- Urgency: ${planInput.metadata.urgency}`);
+      }
+      if (planInput.metadata.category) {
+        parts.push(`- Category: ${planInput.metadata.category}`);
+      }
+      if (planInput.metadata.tags && planInput.metadata.tags.length > 0) {
+        parts.push(`- Tags: ${planInput.metadata.tags.join(', ')}`);
+      }
+      parts.push('');
+    }
+
+    parts.push(`## Instructions`);
+    parts.push(`Generate a detailed execution plan following the PlannerPlanDTO schema.`);
+    parts.push(`Return ONLY valid JSON without any markdown formatting or code blocks.`);
+
+    return parts.join('\n');
+  }
+
+  /**
+   * Parses the LLM response content into a PlannerPlanDTO.
+   * Handles JSON extraction from markdown code blocks if present.
+   */
+  private parseLLMResponse(content: string): PlannerPlanDTO {
+    let jsonContent = content.trim();
+
+    // Try to extract JSON from markdown code blocks
+    const jsonBlockMatch = jsonContent.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+    if (jsonBlockMatch) {
+      jsonContent = jsonBlockMatch[1].trim();
+    }
+
+    // Remove any leading/trailing text that's not JSON
+    const jsonStartIndex = jsonContent.indexOf('{');
+    const jsonEndIndex = jsonContent.lastIndexOf('}');
+
+    if (jsonStartIndex === -1 || jsonEndIndex === -1) {
+      throw new Error('No valid JSON object found in LLM response');
+    }
+
+    jsonContent = jsonContent.substring(jsonStartIndex, jsonEndIndex + 1);
+
+    try {
+      const plan = JSON.parse(jsonContent) as PlannerPlanDTO;
+      return plan;
+    } catch (error) {
+      logger.error('Failed to parse LLM response as JSON', {
+        error: error instanceof Error ? error.message : String(error),
+        content: jsonContent.substring(0, 500), // Log first 500 chars for debugging
+      });
+      throw new Error(`Invalid JSON in LLM response: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Validates that the generated plan has all required fields.
+   */
+  private validateGeneratedPlan(plan: PlannerPlanDTO): void {
+    if (!plan.planId || typeof plan.planId !== 'string') {
+      throw new Error('Generated plan missing valid planId');
+    }
+
+    if (!plan.description || typeof plan.description !== 'string') {
+      throw new Error('Generated plan missing valid description');
+    }
+
+    if (!Array.isArray(plan.steps) || plan.steps.length === 0) {
+      throw new Error('Generated plan must have at least one step');
+    }
+
+    if (!Array.isArray(plan.artifacts)) {
+      throw new Error('Generated plan missing artifacts array');
+    }
+
+    if (!plan.metadata || typeof plan.metadata !== 'object') {
+      throw new Error('Generated plan missing metadata object');
+    }
+
+    // Validate each step
+    for (const step of plan.steps) {
+      if (!step.id || !step.name || !step.type || !step.agent || !step.description) {
+        throw new Error(`Invalid step structure: ${JSON.stringify(step)}`);
+      }
+
+      if (!Array.isArray(step.dependencies)) {
+        throw new Error(`Step ${step.id} missing dependencies array`);
+      }
+
+      if (!Array.isArray(step.expectedOutputs)) {
+        throw new Error(`Step ${step.id} missing expectedOutputs array`);
+      }
+    }
+
+    // Validate metadata
+    if (!plan.metadata.createdAt || !plan.metadata.estimatedDuration || !plan.metadata.priority) {
+      throw new Error('Generated plan metadata missing required fields');
+    }
+
+    if (!Array.isArray(plan.metadata.dependencies)) {
+      throw new Error('Generated plan metadata missing dependencies array');
+    }
+
+    if (!Array.isArray(plan.metadata.tags)) {
+      throw new Error('Generated plan metadata missing tags array');
+    }
+
+    if (!plan.metadata.version) {
+      throw new Error('Generated plan metadata missing version');
+    }
   }
 
   private validateInput(planInput: PlannerInputDTO): void {
