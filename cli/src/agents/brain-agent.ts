@@ -6,6 +6,7 @@ import { sdOpenAIProvider } from '../api/providers/openai-provider';
 import { sdAnthropicProvider } from '../api/providers/anthropic-provider';
 import { sdLocalProvider } from '../api/providers/local-provider';
 import { sdPlannerOrchestrator } from './planner/plan-orchestrator';
+import { DeveloperAgent } from './developer-agent';
 import { PlannerInputDTO } from '../../shared/contracts/plan-schema';
 import fs from 'fs/promises';
 import path from 'path';
@@ -281,6 +282,13 @@ export class BrainAgent extends BaseAgent {
       } else if (cleanContent.startsWith('```')) {
         cleanContent = cleanContent.replace(/```\n?/, '').replace(/\n?```$/, '');
       }
+
+      // Heuristic fix for unquoted string values (e.g. "complexity": low -> "complexity": "low")
+      // Matches "key": value where value is a word not strictly true/false/null/numbers
+      cleanContent = cleanContent.replace(/"(\w+)":\s*([a-zA-Z]+)(?=\s*[,}])/g, (match, key, value) => {
+        if (['true', 'false', 'null'].includes(value)) return match;
+        return `"${key}": "${value}"`;
+      });
 
       analysis = JSON.parse(cleanContent);
     } catch (error) {
@@ -677,7 +685,32 @@ export class BrainAgent extends BaseAgent {
   }
 
   private async simulateAgentWork(step: ExecutionStep, userPrompt?: string): Promise<any> {
-    // Execute real planner orchestrator if the agent is 'planner'
+    // 1. Handle Developer Agent
+    if (step.agent === 'developer') {
+      try {
+        const developerAgent = new DeveloperAgent({}, this.providerRegistry);
+
+        // Prepare task
+        // We want the FULL context for the developer agent
+        const taskDescription = userPrompt && step.agent === 'developer'
+          ? `${step.task}\n\nContext/User Request: ${userPrompt}`
+          : step.task;
+
+        const task: AgentTask = {
+          id: step.id,
+          type: 'task',
+          description: taskDescription,
+          status: 'pending'
+        };
+
+        return await developerAgent.execute(task);
+      } catch (error) {
+        console.warn(`Agent ${step.agent} failed:`, (error as Error).message);
+        throw error;
+      }
+    }
+
+    // 2. Handle Planner (via Orchestrator)
     if (step.agent === 'planner' && userPrompt) {
       try {
         const planInput: PlannerInputDTO = {
@@ -704,7 +737,7 @@ export class BrainAgent extends BaseAgent {
       }
     }
 
-    // Simular trabalho do agente para outros agentes
+    // 3. Fallback to simulation for others
     const duration = step.estimatedDuration || 3000;
     await new Promise(resolve => setTimeout(resolve, Math.min(duration, 5000)));
     return { success: true };
