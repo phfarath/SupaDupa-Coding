@@ -57,7 +57,7 @@ router.post(
         },
       };
 
-      const plan: PlannerPlanDTO = orchestrator.createExecutionPlan(enhancedInput);
+      const plan: PlannerPlanDTO = await orchestrator.createExecutionPlan(enhancedInput);
 
       systemEvents.emit(SystemEvent.PLAN_CREATED, {
         plan,

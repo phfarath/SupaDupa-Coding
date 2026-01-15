@@ -682,7 +682,7 @@ export class BrainAgent extends BaseAgent {
           },
         };
         
-        const plan = this.plannerOrchestrator.createExecutionPlan(planInput);
+        const plan = await this.plannerOrchestrator.createExecutionPlan(planInput);
         return { plan, success: true };
       } catch (error) {
         console.warn('Planner orchestrator failed:', (error as Error).message);
