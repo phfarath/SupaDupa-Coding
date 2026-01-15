@@ -1,13 +1,15 @@
 # Dependencies
 node_modules/
 cli/node_modules/
-cli_backup/node_modules/
 
 # Build outputs
 dist/
 cli/dist/
 *.js.map
 *.d.ts.map
+*.d.ts
+tests/**/*.js.map
+tests/**/*.d.ts.map
 
 # Environment and secrets
 .env
