@@ -46,7 +46,7 @@ describe('Planner + Memory + Queue Integration', () => {
   });
 
   describe('Plan Creation and Queueing', () => {
-    test('should create plan and enqueue automatically', () => {
+    test('should create plan and enqueue automatically', async () => {
       const input: PlannerInputDTO = {
         request: 'Test feature implementation',
         metadata: {
@@ -55,7 +55,7 @@ describe('Planner + Memory + Queue Integration', () => {
         },
       };
 
-      const plan = orchestrator.createExecutionPlan(input);
+      const plan = await orchestrator.createExecutionPlan(input);
 
       expect(plan).toBeDefined();
       expect(plan.planId).toBeTruthy();
@@ -78,7 +78,7 @@ describe('Planner + Memory + Queue Integration', () => {
       });
     });
 
-    test('should handle constraints properly', () => {
+    test('should handle constraints properly', async () => {
       const input: PlannerInputDTO = {
         request: 'Constrained feature',
         constraints: {
@@ -90,7 +90,7 @@ describe('Planner + Memory + Queue Integration', () => {
         },
       };
 
-      const plan = orchestrator.createExecutionPlan(input);
+      const plan = await orchestrator.createExecutionPlan(input);
 
       expect(plan.metadata.estimatedDuration).toBeLessThanOrEqual(50);
       expect(plan.steps.every((step) => step.agent !== 'qa')).toBe(true);
@@ -103,7 +103,7 @@ describe('Planner + Memory + Queue Integration', () => {
         request: 'Memory integration test',
       };
 
-      const plan = orchestrator.createExecutionPlan(input);
+      const plan = await orchestrator.createExecutionPlan(input);
 
       // Store plan in memory as a record
       await memoryRepo.putMemoryRecord({
@@ -137,7 +137,7 @@ describe('Planner + Memory + Queue Integration', () => {
       ];
 
       for (const planInput of plans) {
-        const plan = orchestrator.createExecutionPlan(planInput);
+        const plan = await orchestrator.createExecutionPlan(planInput);
         await memoryRepo.putMemoryRecord({
           id: `plan_${plan.planId}`,
           key: plan.description,
@@ -160,11 +160,11 @@ describe('Planner + Memory + Queue Integration', () => {
   });
 
   describe('Queue Operations', () => {
-    test('should maintain queue order', () => {
+    test('should maintain queue order', async () => {
       const plans = [
-        orchestrator.createExecutionPlan({ request: 'Plan 1' }),
-        orchestrator.createExecutionPlan({ request: 'Plan 2' }),
-        orchestrator.createExecutionPlan({ request: 'Plan 3' }),
+        await orchestrator.createExecutionPlan({ request: 'Plan 1' }),
+        await orchestrator.createExecutionPlan({ request: 'Plan 2' }),
+        await orchestrator.createExecutionPlan({ request: 'Plan 3' }),
       ];
 
       expect(plannerExecutionQueue.size()).toBe(3);
@@ -178,8 +178,8 @@ describe('Planner + Memory + Queue Integration', () => {
       expect(plannerExecutionQueue.size()).toBe(1);
     });
 
-    test('should get immutable snapshot', () => {
-      orchestrator.createExecutionPlan({ request: 'Snapshot test' });
+    test('should get immutable snapshot', async () => {
+      await orchestrator.createExecutionPlan({ request: 'Snapshot test' });
 
       const snapshot = plannerExecutionQueue.getSnapshot();
       const originalSize = plannerExecutionQueue.size();
@@ -190,8 +190,8 @@ describe('Planner + Memory + Queue Integration', () => {
       expect(plannerExecutionQueue.size()).toBe(originalSize);
     });
 
-    test('should find plan by ID', () => {
-      const plan = orchestrator.createExecutionPlan({ request: 'Find test' });
+    test('should find plan by ID', async () => {
+      const plan = await orchestrator.createExecutionPlan({ request: 'Find test' });
 
       const found = plannerExecutionQueue.findByPlanId(plan.planId);
       expect(found?.plan.planId).toBe(plan.planId);
@@ -200,8 +200,8 @@ describe('Planner + Memory + Queue Integration', () => {
       expect(notFound).toBeUndefined();
     });
 
-    test('should remove plan by ID', () => {
-      const plan = orchestrator.createExecutionPlan({ request: 'Remove test' });
+    test('should remove plan by ID', async () => {
+      const plan = await orchestrator.createExecutionPlan({ request: 'Remove test' });
       const initialSize = plannerExecutionQueue.size();
 
       const removed = plannerExecutionQueue.removeByPlanId(plan.planId);
@@ -214,7 +214,7 @@ describe('Planner + Memory + Queue Integration', () => {
   });
 
   describe('Complex Scenarios', () => {
-    test('should handle quality-focused request with review step', () => {
+    test('should handle quality-focused request with review step', async () => {
       const input: PlannerInputDTO = {
         request: 'Critical security update',
         preferences: {
@@ -222,13 +222,13 @@ describe('Planner + Memory + Queue Integration', () => {
         },
       };
 
-      const plan = orchestrator.createExecutionPlan(input);
+      const plan = await orchestrator.createExecutionPlan(input);
 
       const hasReviewStep = plan.steps.some((step) => step.type === 'governance');
       expect(hasReviewStep).toBe(true);
     });
 
-    test('should adapt plan when agents are forbidden', () => {
+    test('should adapt plan when agents are forbidden', async () => {
       const input: PlannerInputDTO = {
         request: 'Feature with agent constraints',
         constraints: {
@@ -236,14 +236,14 @@ describe('Planner + Memory + Queue Integration', () => {
         },
       };
 
-      const plan = orchestrator.createExecutionPlan(input);
+      const plan = await orchestrator.createExecutionPlan(input);
 
       expect(plan.steps.every((step) => step.agent !== 'developer')).toBe(true);
     });
 
     test('should store and retrieve complete workflow', async () => {
       // Create plan
-      const plan = orchestrator.createExecutionPlan({
+      const plan = await orchestrator.createExecutionPlan({
         request: 'Complete workflow test',
         preferences: { prioritizeQuality: true },
       });
@@ -275,16 +275,16 @@ describe('Planner + Memory + Queue Integration', () => {
   });
 
   describe('Error Handling', () => {
-    test('should reject empty request', () => {
-      expect(() => {
-        orchestrator.createExecutionPlan({ request: '' });
-      }).toThrow('request must be provided');
+    test('should reject empty request', async () => {
+      await expect(
+        orchestrator.createExecutionPlan({ request: '' })
+      ).rejects.toThrow('request must be provided');
     });
 
-    test('should reject request with only whitespace', () => {
-      expect(() => {
-        orchestrator.createExecutionPlan({ request: '   ' });
-      }).toThrow('request must be provided');
+    test('should reject request with only whitespace', async () => {
+      await expect(
+        orchestrator.createExecutionPlan({ request: '   ' })
+      ).rejects.toThrow('request must be provided');
     });
 
     test('should handle memory errors gracefully', async () => {

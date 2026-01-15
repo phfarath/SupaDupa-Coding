@@ -31,7 +31,7 @@ async function testPlanner() {
     },
   };
 
-  const plan1 = orchestrator.createExecutionPlan(input1);
+  const plan1 = await orchestrator.createExecutionPlan(input1);
   console.log('✓ Plan created:', plan1.planId);
   console.log('  Description:', plan1.description);
   console.log('  Steps:', plan1.steps.length);
@@ -52,7 +52,7 @@ async function testPlanner() {
     },
   };
 
-  const plan2 = orchestrator.createExecutionPlan(input2);
+  const plan2 = await orchestrator.createExecutionPlan(input2);
   console.log('✓ Plan created:', plan2.planId);
   console.log('  Steps:', plan2.steps.length);
   console.log('  Estimated Duration:', `${plan2.metadata.estimatedDuration}min`);
