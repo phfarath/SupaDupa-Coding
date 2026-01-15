@@ -7,7 +7,10 @@ import { sdAnthropicProvider } from '../api/providers/anthropic-provider';
 import { sdLocalProvider } from '../api/providers/local-provider';
 import { sdPlannerOrchestrator } from './planner/plan-orchestrator';
 import { DeveloperAgent } from './developer-agent';
+import { QaAgent } from './qa-agent';
 import { PlannerInputDTO } from '../../shared/contracts/plan-schema';
+import { ITool } from '../../shared/contracts/tool-schema';
+import { ReadFileTool, WriteFileTool } from '../tools/file-tools';
 import fs from 'fs/promises';
 import path from 'path';
 import chalk from 'chalk';
@@ -35,7 +38,7 @@ export interface BrainResponse {
 }
 
 export interface ExecutionStrategy {
-  intent: 'planning' | 'implementation' | 'bugfix' | 'review' | 'documentation';
+  intent: 'planning' | 'implementation' | 'bugfix' | 'review' | 'documentation' | 'direct_execution';
   mode: 'sequential' | 'parallel';
   complexity: 'low' | 'medium' | 'high';
   requiresApproval: boolean;
@@ -60,6 +63,7 @@ export class BrainAgent extends BaseAgent {
   private providerRegistry: sdProviderRegistry;
   private plannerOrchestrator: sdPlannerOrchestrator;
   private useLLM: boolean = true; // Toggle para usar LLM ou fallback
+  private tools: Map<string, ITool> = new Map();
 
   constructor(config: { name: string; sessionManager: SessionManager; activeAgents: string[] }) {
     super(config.name, {
@@ -71,6 +75,14 @@ export class BrainAgent extends BaseAgent {
     this.activeAgents = new Set(config.activeAgents);
     this.providerRegistry = new sdProviderRegistry();
     this.plannerOrchestrator = new sdPlannerOrchestrator({ persistOutput: true });
+
+    // Register direct execution tools
+    this.registerTool(new ReadFileTool());
+    this.registerTool(new WriteFileTool());
+  }
+
+  private registerTool(tool: ITool) {
+    this.tools.set(tool.definition.name, tool);
   }
 
   /**
@@ -335,7 +347,16 @@ export class BrainAgent extends BaseAgent {
 
     // Determinar intent
     let intent: ExecutionStrategy['intent'] = 'implementation';
-    if (promptLower.includes('planejar') || promptLower.includes('arquitetura') || promptLower.includes('design')) {
+
+    // Check for direct execution keywords
+    if (
+      (promptLower.startsWith('create file') || promptLower.startsWith('criar arquivo') ||
+        promptLower.startsWith('write file') || promptLower.startsWith('escrever arquivo') ||
+        promptLower.startsWith('read file') || promptLower.startsWith('ler arquivo')) &&
+      words < 15 // Only for simple prompts
+    ) {
+      intent = 'direct_execution';
+    } else if (promptLower.includes('planejar') || promptLower.includes('arquitetura') || promptLower.includes('design')) {
       intent = 'planning';
     } else if (promptLower.includes('bug') || promptLower.includes('corrigir') || promptLower.includes('fix')) {
       intent = 'bugfix';
@@ -347,7 +368,9 @@ export class BrainAgent extends BaseAgent {
 
     // Determinar complexidade
     let complexity: ExecutionStrategy['complexity'] = 'medium';
-    if (promptLower.includes('simples') || promptLower.includes('pequeno')) {
+    if (intent === 'direct_execution') {
+      complexity = 'low';
+    } else if (promptLower.includes('simples') || promptLower.includes('pequeno')) {
       complexity = 'low';
     } else if (promptLower.includes('complexo') || promptLower.includes('grande') || promptLower.includes('sistema')) {
       complexity = 'high';
@@ -451,6 +474,17 @@ export class BrainAgent extends BaseAgent {
     const activeAgentsList = Array.from(this.activeAgents);
 
     switch (intent) {
+      case 'direct_execution':
+        steps.push({
+          id: 'brain-1',
+          agent: 'brain',
+          task: prompt,
+          dependencies: [],
+          files: [],
+          estimatedDuration: 5000,
+        });
+        break;
+
       case 'planning':
         if (activeAgentsList.includes('planner')) {
           steps.push({
@@ -685,6 +719,72 @@ export class BrainAgent extends BaseAgent {
   }
 
   private async simulateAgentWork(step: ExecutionStep, userPrompt?: string): Promise<any> {
+    // 0. Handle Brain (Direct Execution)
+    if (step.agent === 'brain') {
+      try {
+        const prompt = step.task;
+
+        // Match: create file [filename] (with content [content])?
+        // Simple regex, assuming filename is the last word if no content provided
+        // or extract filename more carefully
+
+        if (prompt.match(/(create|write|criar|escrever) (file|arquivo)/i)) {
+          const writeTool = this.tools.get('write_file');
+          if (!writeTool) throw new Error('WriteFileTool not available');
+
+          // Naive parsing: try to find filename
+          // Assuming "create file filename"
+          const words = prompt.split(' ');
+          const fileIndex = words.findIndex(w => w.match(/(file|arquivo)/i));
+          let filename = words[fileIndex + 1];
+          // Remove quotes if present
+          if (filename) filename = filename.replace(/['"]/g, '');
+
+          // Try to extract content if "with content" present
+          let content = '';
+          const contentMatch = prompt.match(/with content ["'](.+)["']/i) || prompt.match(/with content (.+)/i);
+          if (contentMatch) {
+            content = contentMatch[1];
+          }
+
+          if (filename) {
+            // Resolve path relative to cwd if not absolute
+            const cwd = process.cwd();
+            const fullPath = path.isAbsolute(filename) ? filename : path.join(cwd, filename);
+
+            return await writeTool.execute({
+              path: fullPath,
+              content: content,
+              overwrite: false
+            });
+          }
+        }
+
+        if (prompt.match(/(read|ler) (file|arquivo)/i)) {
+          const readTool = this.tools.get('read_file');
+          if (!readTool) throw new Error('ReadFileTool not available');
+
+          const words = prompt.split(' ');
+          const fileIndex = words.findIndex(w => w.match(/(file|arquivo)/i));
+          let filename = words[fileIndex + 1];
+          if (filename) filename = filename.replace(/['"]/g, '');
+
+          if (filename) {
+            const cwd = process.cwd();
+            const fullPath = path.isAbsolute(filename) ? filename : path.join(cwd, filename);
+
+            return await readTool.execute({ path: fullPath });
+          }
+        }
+
+        return { success: false, message: 'Could not parse direct execution command' };
+
+      } catch (error) {
+        console.warn('Brain direct execution failed:', (error as Error).message);
+        throw error;
+      }
+    }
+
     // 1. Handle Developer Agent
     if (step.agent === 'developer') {
       try {
@@ -737,7 +837,29 @@ export class BrainAgent extends BaseAgent {
       }
     }
 
-    // 3. Fallback to simulation for others
+    // 3. Handle QA Agent
+    if (step.agent === 'qa') {
+      try {
+        const qaAgent = new QaAgent({}, this.providerRegistry);
+        const taskDescription = userPrompt && step.task === 'qa'
+          ? `${step.task}: ${userPrompt}`
+          : step.task;
+
+        const task: AgentTask = {
+          id: step.id,
+          type: 'task',
+          description: taskDescription,
+          status: 'pending'
+        };
+
+        return await qaAgent.execute(task);
+      } catch (error) {
+        console.warn(`Agent ${step.agent} failed:`, (error as Error).message);
+        throw error;
+      }
+    }
+
+    // 4. Fallback to simulation for others
     const duration = step.estimatedDuration || 3000;
     await new Promise(resolve => setTimeout(resolve, Math.min(duration, 5000)));
     return { success: true };
