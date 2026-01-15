@@ -43,12 +43,15 @@ export class DeveloperAgent extends sdBaseAgent {
   private registerDefaultTools() {
     // Dynamically import tools to avoid circular dependencies if any
     // For now we import them directly as they are available
-    const { ReadFileTool, WriteFileTool, ListDirTool, RunCommandTool } = require('../tools/file-tools'); // Using require for simplicity in this context or could use imports at top
+    const { ReadFileTool, WriteFileTool, ListDirTool, RunCommandTool } = require('../tools/file-tools');
+    const { SearchFilesTool, FindFilesTool } = require('../tools/search-tools');
 
     this.registerTool(new ReadFileTool());
     this.registerTool(new WriteFileTool());
     this.registerTool(new ListDirTool());
     this.registerTool(new RunCommandTool());
+    this.registerTool(new SearchFilesTool());
+    this.registerTool(new FindFilesTool());
   }
 
   public registerTool(tool: ITool) {
@@ -68,8 +71,9 @@ Instructions:
 2. Use the available tools to execute the task.
 3. If you need to write a file, use 'write_file'.
 4. If you need to read a file, use 'read_file'.
-5. If you need to run a shell command, use 'run_command'.
-6. Return a final status when done.
+5. If you need to search for files or content, use 'search_files' or 'find_files'.
+6. If you need to run a shell command, use 'run_command'.
+7. Return a final status when done.
 
 IMPORTANT: To use a tool, your response MUST be a valid JSON object with this structure:
 {
