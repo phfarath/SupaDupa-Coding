@@ -1,0 +1,274 @@
+@project
+name: SupaDupa-Coding
+type: multi-agent-orchestration-system
+status: active-development
+primary_language: typescript
+repo_layout: monorepo
+last_updated: 2026-01-21
+
+@entry_points
+- name: cli
+  kind: cli
+  path: cli/src/index.ts
+  run: npm run start
+
+- name: api-server
+  kind: api
+  path: cli/src/api-server.ts
+  run: npm run start:api
+
+- name: test-suite
+  kind: test
+  path: cli/tests/
+  run: npm test
+
+- name: build
+  kind: build
+  path: cli/tsconfig.build.json
+  run: npm run build
+
+@architecture
+pattern: event-driven-multi-agent
+main_flow:
+  - step: user-request
+    from: cli-or-api
+    to: orchestrator
+  
+  - step: planning
+    from: orchestrator
+    to: planner-agent
+  
+  - step: execution
+    from: planner-agent
+    to: workflow-engine
+  
+  - step: agent-tasks
+    from: workflow-engine
+    to: developer-qa-docs-agents
+  
+  - step: git-operations
+    from: agents
+    to: mcp-git-server
+  
+  - step: memory-sharing
+    from: agents
+    to: memory-system
+
+components:
+  - name: cli-commands
+    path: cli/src/commands/
+    depends_on:
+      - core-orchestrator
+      - agent-system
+  
+  - name: api-server
+    path: cli/src/api/
+    depends_on:
+      - provider-registry
+      - rate-limiter
+      - validation
+  
+  - name: agent-system
+    path: cli/src/agents/
+    depends_on:
+      - memory-system
+      - llm-provider-registry
+      - base-agent
+  
+  - name: memory-system
+    path: cli/src/memory/
+    depends_on:
+      - sqlite
+      - cache-layer
+  
+  - name: workflow-engine
+    path: cli/src/workflow/
+    depends_on:
+      - checkpoint-manager
+      - task-executor
+      - task-queue
+  
+  - name: mcp-integration
+    path: cli/src/mcp/
+    depends_on:
+      - mcp-client
+      - git-server
+  
+  - name: provider-registry
+    path: cli/src/api/provider-registry.ts
+    depends_on:
+      - openai-provider
+      - anthropic-provider
+      - local-provider
+  
+  - name: core-orchestrator
+    path: cli/src/core/
+    depends_on:
+      - unified-config-manager
+      - session-manager
+
+@tech_stack
+runtime:
+  - nodejs-16+
+  - typescript-5.3.3
+
+framework:
+  - express-5.1.0
+  - commander-11.0.0
+  - inquirer-9.2.0
+
+database:
+  - sqlite3-5.1.6
+
+messaging:
+  - event-emitter
+  - websocket-ws-8.14.2
+
+ai:
+  - openai-api
+  - anthropic-api
+  - ollama-local
+
+observability:
+  - custom-logger
+  - cli-progress
+  - ora-spinners
+  - chalk-styling
+
+infra:
+  - git
+  - mcp-servers
+  - env-variables
+
+@data_model
+entities:
+  - name: memory_records
+    kind: table
+    key_fields:
+      - record_id
+      - key
+      - category
+    relations:
+      - memory_permissions
+
+  - name: memory_permissions
+    kind: table
+    key_fields:
+      - record_id
+      - agent_id
+    relations:
+      - memory_records
+
+  - name: PlannerPlanDTO
+    kind: schema
+    key_fields:
+      - planId
+      - description
+      - steps
+    relations:
+      - PlannerStepDTO
+
+  - name: PlannerStepDTO
+    kind: schema
+    key_fields:
+      - id
+      - agent
+      - dependencies
+    relations:
+      - PlannerPlanDTO
+
+  - name: WorkflowCheckpoint
+    kind: schema
+    key_fields:
+      - checkpointId
+      - workflowId
+      - state
+    relations:
+      - workflow-tasks
+
+@key_files
+  - purpose: cli-entry-point
+    path: cli/src/index.ts
+
+  - purpose: api-server-entry
+    path: cli/src/api-server.ts
+
+  - purpose: base-agent-class
+    path: cli/src/agents/base-agent.ts
+
+  - purpose: planner-orchestrator
+    path: cli/src/agents/planner/plan-orchestrator.ts
+
+  - purpose: memory-repository
+    path: cli/src/memory/memory-repository.ts
+
+  - purpose: workflow-runner
+    path: cli/src/workflow/workflow-runner.ts
+
+  - purpose: mcp-client
+    path: cli/src/mcp/mcp-client.ts
+
+  - purpose: provider-registry
+    path: cli/src/api/provider-registry.ts
+
+  - purpose: unified-config
+    path: cli/src/core/unified-config-manager.ts
+
+  - purpose: plan-schema-contract
+    path: shared/contracts/plan-schema.ts
+
+  - purpose: memory-schema
+    path: cli/src/memory/migrations/001-initial-schema.sql
+
+  - purpose: event-emitter
+    path: shared/events/event-emitter.ts
+
+@tests
+  - kind: unit
+    path: cli/tests/*.test.ts
+    run: npm test
+
+  - kind: integration
+    path: cli/tests/integration/*.test.ts
+    run: npm run example:planner
+
+  - kind: e2e
+    path: cli/examples/end-to-end-workflow.ts
+    run: npm run example:e2e
+
+@implemented_features
+- cli-framework-with-commander
+- planner-agent-with-task-decomposition
+- developer-agent-for-code-implementation
+- qa-agent-for-testing
+- docs-agent-for-documentation
+- brain-agent-for-coordination
+- memory-system-sqlite-with-cache
+- api-server-with-rest-endpoints
+- provider-registry-openai-anthropic-local
+- workflow-engine-with-checkpoints
+- mcp-integration-git-operations
+- git-branch-commit-management
+- unified-config-system
+- rate-limiting-circuit-breaker
+- event-driven-architecture
+- security-encryption-utilities
+- logging-metrics-observability
+- test-infrastructure
+
+@todo_next
+- pr-review-automation-github-api
+- fix-command-issue-detection
+- ai-task-decomposition-in-orchestrator
+- resource-tracking-memory-cpu
+- memory-compression-checkpoints
+- fine-grained-mcp-permissions
+- file-modification-tracking
+- status-tracking-dashboard
+- confirmation-prompts-destructive-ops
+- increase-test-coverage-80-percent
+- inline-jsdoc-public-apis
+- performance-optimization-sqlite
+- plugin-extension-system
+- multi-repo-support
+- distributed-workflow-execution
