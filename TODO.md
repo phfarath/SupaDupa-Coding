@@ -137,7 +137,7 @@ SupaDupa-Coding é um sistema de agentes de código similar ao Claude Code, Code
   - [ ] Memória de decisões passadas
   - [ ] Melhoria baseada em feedback
 - [ ] **Estratégias de planejamento**
-  - [ ] Magentic pattern (planejamento magnético)
+  - [ ] Magentic-One pattern (orquestração multi-agente)
   - [ ] Blackboard pattern
   - [ ] Handoff pattern
 - [ ] **Auto-otimização**

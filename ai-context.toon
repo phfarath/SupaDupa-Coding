@@ -414,7 +414,7 @@ phase_1_advanced_interface:
 
 phase_2_advanced_brain:
   - continuous-learning
-  - planning-strategies-magentic
+  - planning-strategies-magentic-one
   - auto-optimization
 
 phase_3_additional_agents:
