@@ -1,21 +1,47 @@
 # SupaDupa-Coding — Architecture Documentation
 
-**Branch:** `copilot/generate-standardized-documentation`  
-**Last Updated:** 2026-01-21  
+**Branch:** `main`  
+**Last Updated:** 2026-01-23  
 **Status:** 🟢 Active Development (Core features implemented, ~75% complete)
 
 ---
 
 ## 📋 Purpose
 
-SupaDupa-Coding is a **multi-agent orchestration system** that automates software development workflows using specialized AI agents. It enables:
+SupaDupa-Coding is a **multi-agent orchestration system** that automates software development workflows using specialized AI agents. Similar to Claude Code, Codex, and Qwen-Code, but with a unique **Brain Agent architecture** that coordinates workflows without conflicts.
 
+### Core Features
 - **Automated Planning**: Decompose complex requirements into actionable tasks
 - **Code Generation**: Implement features with specialized developer agents
 - **Quality Assurance**: Automated testing and code review
 - **Documentation**: Maintain up-to-date documentation automatically
 - **Git Integration**: Autonomous commits, branches, and PR management via MCP (Model Context Protocol)
 - **Memory Management**: Share context and decisions across agents through a unified memory system
+
+### Unique Differentials
+- **Brain Agent**: Central coordinator that manages all workflows
+- **Mini-Brains**: Distributed monitoring agents that report to the main Brain
+- **Big Job Mode**: Synchronized workflow for complex tasks without branch conflicts
+- **Security Agent**: Automatic vulnerability detection with issue creation
+- **PR Approval Agent**: Automated code review and approval workflow
+
+---
+
+## 🎯 Project Vision
+
+### Interface Goals
+1. **Terminal Colorido** - Beautiful terminal design with modern styling
+2. **Autenticação** - API key registration and secure credential storage
+3. **Brain Agent Conversacional** - Interactive chat for queries and direct building
+4. **Modo Big Job** - Complete synchronized workflow without codebase conflicts
+
+### Workflow Modes
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **Conversational** | Interactive chat | Simple queries, quick edits |
+| **Direct Build** | Immediate execution | Single file changes |
+| **Planning** | Task decomposition | Feature planning |
+| **Big Job** | Full synchronized workflow | Complex multi-file features |
 
 ---
 
@@ -366,29 +392,39 @@ SupaDupa-Coding/
 
 ## 🚧 In Development / TODO
 
-### High Priority
-- [ ] PR review automation (GitHub API integration) - `commands/review.ts` has TODO
-- [ ] Fix command implementation (issue detection + auto-fix) - `commands/fix.ts` has TODOs
-- [ ] Memory compression - `checkpoint-manager.ts` has TODO
-- [ ] Resource tracking (memory/CPU usage per agent) - `base-agent.ts` has TODOs
+> **See [TODO.md](TODO.md) for comprehensive task tracking**  
+> **See [FUTURE_STEPS.md](FUTURE_STEPS.md) for detailed roadmap**
 
-### Medium Priority
-- [ ] AI-based task decomposition in orchestrator - `core/orchestrator.ts` has TODOs
-- [ ] Fine-grained MCP permission checking - `mcp/mcp-client.ts` has TODO
-- [ ] File modification tracking in Developer Agent - `developer-agent.ts` has TODO
-- [ ] Status tracking dashboard - `core/orchestrator.ts` has TODO
-- [ ] Confirmation prompts for destructive operations - `commands/config.ts` has TODO
+### Pre-MVP: High Priority
+- [ ] **Terminal Design System** - Colorful, modern terminal interface
+- [ ] **Authentication & Setup** - API key wizard and secure storage
+- [ ] **Brain Agent Modes** - Conversational, Direct Build, Planning, Big Job
+- [ ] **Mini-Brains System** - Distributed monitoring hierarchy
+- [ ] **Security Agent** - Vulnerability detection + auto issue creation
+- [ ] **PR Approval Agent** - Automated review and approval
 
-### Nice to Have
-- [ ] End-to-end encrypted memory records
+### Pre-MVP: Medium Priority
+- [ ] PR review automation (GitHub API integration) - `commands/review.ts`
+- [ ] Fix command implementation (issue detection + auto-fix) - `commands/fix.ts`
+- [ ] Memory compression - `checkpoint-manager.ts`
+- [ ] Resource tracking (memory/CPU usage per agent) - `base-agent.ts`
+
+### Pre-MVP: Core Workflow
+- [ ] **Big Job Orchestrator** - Synchronized multi-agent workflow
+- [ ] **Branch Sync Manager** - No conflict branch management
+- [ ] **Codebase Lock System** - File-level locks during edits
+
+### Post-MVP: Enhancements
+- [ ] Web UI dashboard
+- [ ] AI-based task decomposition in orchestrator
 - [ ] Multi-repository support
 - [ ] Agent marketplace / plugin system
-- [ ] Advanced analytics and observability
-- [ ] Cost tracking per operation
+- [ ] Advanced analytics and cost tracking
+- [ ] Slack/Discord/GitHub Actions integrations
 
-### Based on Codebase Analysis
+### Technical Debt
 - [ ] Complete example workflows in `examples/`
-- [ ] Add more comprehensive test coverage
+- [ ] Increase test coverage to 80%+
 - [ ] Documentation for custom agent creation
 - [ ] Performance benchmarks
 
@@ -631,42 +667,52 @@ npm run example:e2e        # End-to-end workflow
 
 ## 🚀 Next Steps (Prioritized)
 
-### 1. Complete Critical TODOs (High Impact)
-- Implement PR review automation in `commands/review.ts` (GitHub API integration)
-- Build issue detection + auto-fix in `commands/fix.ts`
-- Add AI-based task decomposition in `core/orchestrator.ts`
+### Phase 1: Foundation (Weeks 1-2)
+**Focus:** Interface and Authentication
+- Implement terminal design system with themes
+- Build authentication wizard and credential storage
+- Create project detector and setup wizard
 
-### 2. Enhance Observability (Medium Impact)
-- Resource tracking (memory/CPU per agent) in `base-agent.ts`
-- Status tracking dashboard for orchestrator
-- Comprehensive metrics collection
+### Phase 2: Brain Agent Core (Weeks 3-4)
+**Focus:** Central Coordination
+- Refactor Brain Agent for multiple modes
+- Implement Big Job Orchestrator
+- Build conversation handler with context management
 
-### 3. Testing & Documentation (Medium Impact)
-- Increase test coverage to 80%+ (especially workflow, memory, providers)
-- Add inline JSDoc for all public APIs
-- Create architecture decision records (ADR) for future decisions
+### Phase 3: Multi-Agent (Weeks 5-6)
+**Focus:** Specialized Agents
+- Create Mini-Brains hierarchy
+- Implement Security Agent with issue creation
+- Build PR Approval Agent with review logic
 
-### 4. Performance Optimization (Medium Impact)
-- Implement memory compression in checkpoint manager
-- Optimize SQLite queries (analyze with EXPLAIN)
-- Add connection pooling for API server
+### Phase 4: Synchronized Workflow (Weeks 7-8)
+**Focus:** No-Conflict Execution
+- Implement branch sync manager
+- Build codebase lock system
+- Add conflict resolution automation
 
-### 5. Developer Experience (Low-Medium Impact)
-- Add confirmation prompts for destructive operations
-- Improve error messages with actionable suggestions
-- Create plugin/extension system for custom agents
-
-### 6. Security Hardening (High Priority)
-- Fine-grained MCP permission checking
-- Audit logging for all agent actions
-- Secret rotation mechanism
-
-### 7. Scalability (Future)
-- Multi-repository support
-- Distributed workflow execution (worker nodes)
-- Agent result caching across sessions
+### Phase 5: Polish & Observability (Weeks 9-10)
+**Focus:** Production Readiness
+- Add metrics dashboard
+- Implement audit logging
+- Increase test coverage to 80%+
+- Performance optimization
 
 ---
 
-**Document maintained by**: Auto-generated via standardized documentation process  
-**Review cycle**: Update on major architectural changes or quarterly
+## 📚 Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [TODO.md](TODO.md) | Comprehensive task tracking (Pre-MVP & Post-MVP) |
+| [FUTURE_STEPS.md](FUTURE_STEPS.md) | Detailed roadmap with micro-steps |
+| [docs/imp-plan.md](docs/imp-plan.md) | Technical implementation plan |
+| [docs/MVP.md](docs/MVP.md) | MVP specifications |
+| [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) | Rules for AI agents |
+| [ai-context.toon](ai-context.toon) | Project context for AI assistants |
+
+---
+
+**Document maintained by**: SupaDupa-Coding Team  
+**Last Updated**: 2026-01-23  
+**Review cycle**: Update on major architectural changes or weekly
