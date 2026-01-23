@@ -1,18 +1,29 @@
 # SupaDupa-Coding
 
-A code agent with subscriptions + API connection for automated software development.
+> 🚀 **Autonomous Code Agent** with Multi-Agent Architecture
 
-## Overview
+A code agent similar to Claude Code, Codex, and Qwen-Code, but with a unique **Brain Agent** architecture that coordinates workflows without conflicts.
 
-SupaDupa-Coding is a multi-agent orchestration system that automates software development tasks using AI agents. It provides:
+## ✨ Vision
 
-- 🤖 **Multi-Agent System**: Specialized agents (Planner, Developer, QA, Docs, Brain)
-- 🔌 **API Integration**: Support for multiple LLM providers (OpenAI, Anthropic, local models)
-- 💾 **Memory Management**: Shared memory and caching between agents
-- 🔄 **Workflow Automation**: MCP (Model Context Protocol) integration for Git operations
-- 📊 **Real-time Monitoring**: Progress tracking and status reporting
+SupaDupa-Coding is a multi-agent orchestration system featuring:
 
-## Quick Start
+- 🧠 **Brain Agent**: Central coordinator with conversational and Big Job modes
+- 🤖 **Mini-Brains**: Distributed monitoring hierarchy
+- 🔒 **Security Agent**: Automatic vulnerability detection with issue creation
+- ✅ **PR Approval Agent**: Automated code review and approval
+- 🔄 **Synchronized Workflow**: No branch conflicts, no codebase conflicts
+
+### Workflow Modes
+
+| Mode | Description |
+|------|-------------|
+| **Conversational** | Interactive chat for simple queries |
+| **Direct Build** | Immediate code execution |
+| **Planning** | Task decomposition |
+| **Big Job** | Full synchronized multi-agent workflow |
+
+## 🚀 Quick Start
 
 ### Installation
 
@@ -26,6 +37,9 @@ npm link  # Makes 'supadupacode' available globally
 ### Basic Usage
 
 ```bash
+# Initialize project (coming soon)
+supadupacode init
+
 # Plan a feature
 supadupacode plan "Add user authentication"
 
@@ -39,15 +53,24 @@ supadupacode status
 supadupacode review --pr 123
 ```
 
-## Documentation
+## 📚 Documentation
 
-- **[CLI Documentation](cli/README.md)** - Complete CLI reference and usage guide
-- **[Quick Start Guide](cli/QUICKSTART.md)** - Get up and running quickly
-- **[Usage Guide](cli/USAGE.md)** - Detailed usage instructions
-- **[Commands Reference](cli/COMMANDS.md)** - All available commands
-- **[Implementation Plan](docs/imp-plan.md)** - Detailed implementation roadmap
+### Core Docs
+- **[TODO.md](TODO.md)** - Comprehensive task tracking (Pre-MVP & Post-MVP)
+- **[FUTURE_STEPS.md](FUTURE_STEPS.md)** - Detailed roadmap with micro-steps
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design patterns
+- **[AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)** - Rules for AI agents modifying the code
 
-## Architecture
+### Implementation
+- **[docs/imp-plan.md](docs/imp-plan.md)** - Detailed implementation roadmap
+- **[docs/MVP.md](docs/MVP.md)** - MVP specifications
+- **[INLINE_DOCS_RECOMMENDATIONS.md](INLINE_DOCS_RECOMMENDATIONS.md)** - Documentation strategy
+
+### CLI Guides
+- **[cli/README.md](cli/README.md)** - CLI reference and usage guide
+- **[cli/GUIDE.md](cli/GUIDE.md)** - Complete running guide
+
+## 🏗️ Architecture
 
 ### Core Components
 
@@ -55,6 +78,9 @@ supadupacode review --pr 123
 cli/
 ├── src/
 │   ├── agents/      # AI agents (Planner, Developer, QA, Docs, Brain)
+│   │   ├── brain/   # Brain Agent + Mini-Brains (NEW)
+│   │   ├── security/# Security Agent (PLANNED)
+│   │   └── reviewer/# PR Approval Agent (PLANNED)
 │   ├── api/         # API server and LLM provider integrations
 │   ├── commands/    # CLI commands
 │   ├── core/        # Orchestrator and configuration
@@ -67,41 +93,50 @@ cli/
 
 ### Key Features
 
+- **Brain Agent**: Central coordinator with multiple modes
 - **Planner Agent**: Decomposes requirements into actionable tasks
 - **Developer Agent**: Implements code changes based on plans
 - **QA Agent**: Runs tests and validates implementations
 - **Docs Agent**: Maintains documentation
-- **Brain Agent**: Provides decision-making and context management
-- **Memory System**: SQLite-based memory with caching for cross-agent context
-- **MCP Integration**: Autonomous Git operations (commits, branches, PRs)
-- **Provider Registry**: Flexible LLM provider management with fallbacks
+- **Security Agent**: Vulnerability detection (planned)
+- **Memory System**: SQLite-based memory with caching
+- **MCP Integration**: Autonomous Git operations
+- **Provider Registry**: Multi-provider LLM support with fallbacks
 
-## Recent Changes
+## 📊 Project Status
 
-This repository has been recently cleaned and organized. See [CLEANUP_SUMMARY.md](CLEANUP_SUMMARY.md) for details:
+| Component | Status |
+|-----------|--------|
+| CLI Framework | ✅ Complete |
+| Agent System | ✅ Core Complete |
+| Memory System | ✅ Complete |
+| Workflow Engine | ✅ Complete |
+| Brain Agent | 🟡 In Progress |
+| Mini-Brains | 📋 Planned |
+| Security Agent | 📋 Planned |
+| PR Approval Agent | 📋 Planned |
+| Big Job Mode | 📋 Planned |
 
-- ✅ Removed duplicate and backup files (~1.1MB)
-- ✅ Consolidated documentation
-- ✅ Reorganized test files
-- ✅ Verified all core components
-- ✅ Build and tests passing
+**Overall Progress:** ~75% Core Complete
 
-## Configuration
+## ⚙️ Configuration
 
 Example configuration:
 
 ```json
 {
   "agents": {
-    "frontend": {
+    "brain": {
       "enabled": true,
-      "role": "frontend",
+      "modes": ["conversational", "direct", "planning", "big-job"]
+    },
+    "developer": {
+      "enabled": true,
       "mcp_tools": ["filesystem", "git"]
     },
-    "backend": {
+    "qa": {
       "enabled": true,
-      "role": "backend",
-      "mcp_tools": ["filesystem", "git", "db"]
+      "mcp_tools": ["filesystem", "test"]
     }
   },
   "orchestration": {
@@ -112,14 +147,7 @@ Example configuration:
 }
 ```
 
-## Requirements
-
-- Node.js 16+
-- npm 8+
-- Git
-- API keys for LLM providers (OpenAI, Anthropic, etc.)
-
-## Development
+## 🛠️ Development
 
 ```bash
 # Install dependencies
@@ -140,26 +168,36 @@ npm run example:planner
 npm run example:api
 ```
 
-## API Server
+## 🌐 API Server
 
-The CLI includes an optional API server for web integration:
+The CLI includes an optional API server:
 
 ```bash
-# Start API server
+# Development
 npm run start:api
 
-# Production mode
+# Production
 npm run start:api:prod
 ```
 
-## License
+## 📋 Requirements
+
+- Node.js 16+
+- npm 8+
+- Git
+- API keys for LLM providers (OpenAI, Anthropic, etc.)
+
+## 📄 License
 
 ISC
 
-## Contributing
+## 🤝 Contributing
 
-This is an active development project. Contributions are welcome!
+This is an active development project. See [TODO.md](TODO.md) for current tasks and [FUTURE_STEPS.md](FUTURE_STEPS.md) for the roadmap.
 
-## Support
+## 📞 Support
 
-For issues, questions, or contributions, please refer to the CLI documentation and implementation plan.
+For issues, questions, or contributions:
+1. Check the documentation files
+2. Review [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) for contribution guidelines
+3. See [docs/imp-plan.md](docs/imp-plan.md) for technical details

@@ -4,7 +4,38 @@ type: multi-agent-orchestration-system
 status: active-development
 primary_language: typescript
 repo_layout: monorepo
-last_updated: 2026-01-21
+last_updated: 2026-01-23
+version: 0.1.0-alpha
+target: autonomous-code-agent
+
+@vision
+description: |
+  Sistema de agente de código autônomo similar ao Claude Code, Codex, Qwen-Code.
+  Diferencial: Brain Agent (agente cérebro) que divide tarefas em menores,
+  coordena small workers, QA, security agents, com workflow síncrono.
+
+interface_goals:
+  - terminal-colorido-design-moderno
+  - autenticacao-registro-apis
+  - brain-agent-conversacional
+  - modo-big-job-workflow-sincronizado
+
+core_differentials:
+  - brain-agent-coordinator
+  - mini-brains-hierarchy
+  - synchronized-workflow-no-conflicts
+  - security-agent-issue-creation
+  - pr-approval-automation
+
+workflow_modes:
+  - mode: conversational
+    description: Chat interativo para tarefas simples e consultas
+  - mode: direct-build
+    description: Execução imediata de tarefas de código
+  - mode: planning
+    description: Planejamento e decomposição de tarefas
+  - mode: big-job
+    description: Workflow completo com múltiplos agentes sincronizados
 
 @entry_points
 - name: cli
@@ -53,6 +84,34 @@ main_flow:
   - step: memory-sharing
     from: agents
     to: memory-system
+
+big_job_flow:
+  - step: user-activates-big-job
+    description: Usuário define tarefa complexa no terminal
+  
+  - step: brain-decomposes
+    description: Brain Agent decompõe tarefa em subtarefas
+  
+  - step: mini-brains-created
+    description: Mini-brains são criados para monitorar cada área
+  
+  - step: agents-synchronized
+    description: Agentes executam sem conflitos de branch/codebase
+  
+  - step: security-check
+    description: Security Agent verifica vulnerabilidades
+  
+  - step: issues-created
+    description: Issues abertas com sugestões de correção
+  
+  - step: pr-approval
+    description: PR Approval Agent revisa e aprova
+  
+  - step: brain-reports
+    description: Mini-brains reportam ao Brain principal
+  
+  - step: workflow-complete
+    description: Fluxo finalizado com sucesso
 
 components:
   - name: cli-commands
@@ -106,6 +165,28 @@ components:
     depends_on:
       - unified-config-manager
       - session-manager
+
+  - name: brain-system
+    path: cli/src/agents/brain/
+    depends_on:
+      - base-agent
+      - mini-brains
+      - conversation-handler
+      - big-job-orchestrator
+
+  - name: security-agent
+    path: cli/src/agents/security/
+    depends_on:
+      - base-agent
+      - vulnerability-scanner
+      - issue-creator
+
+  - name: reviewer-agent
+    path: cli/src/agents/reviewer/
+    depends_on:
+      - base-agent
+      - code-quality-checker
+      - approval-logic
 
 @tech_stack
 runtime:
@@ -223,6 +304,27 @@ entities:
   - purpose: event-emitter
     path: shared/events/event-emitter.ts
 
+  - purpose: brain-agent
+    path: cli/src/agents/brain-agent.ts
+
+  - purpose: big-job-orchestrator
+    path: cli/src/agents/brain/big-job-orchestrator.ts
+
+  - purpose: mini-brain
+    path: cli/src/agents/brain/mini-brains/mini-brain.ts
+
+  - purpose: security-agent
+    path: cli/src/agents/security/security-agent.ts
+
+  - purpose: reviewer-agent
+    path: cli/src/agents/reviewer/reviewer-agent.ts
+
+  - purpose: terminal-ui
+    path: cli/src/ui/theme.ts
+
+  - purpose: auth-manager
+    path: cli/src/auth/auth-manager.ts
+
 @tests
   - kind: unit
     path: cli/tests/*.test.ts
@@ -272,3 +374,114 @@ entities:
 - plugin-extension-system
 - multi-repo-support
 - distributed-workflow-execution
+
+@roadmap_pre_mvp
+milestone_1_interface:
+  - terminal-design-system
+  - authentication-and-setup
+  - project-configuration
+
+milestone_2_brain_core:
+  - conversational-mode
+  - direct-build-mode
+  - big-job-orchestrator
+
+milestone_3_mini_brains:
+  - mini-brain-architecture
+  - inter-brain-communication
+  - report-aggregation
+
+milestone_4_specialized_agents:
+  - security-agent
+  - pr-approval-agent
+  - enhanced-developer-agent
+
+milestone_5_workflow_sync:
+  - branch-management
+  - codebase-sync
+  - conflict-resolution
+
+milestone_6_observability:
+  - metrics-dashboard
+  - audit-logging
+  - event-tracking
+
+@roadmap_post_mvp
+phase_1_advanced_interface:
+  - web-ui-optional
+  - terminal-themes
+  - desktop-notifications
+
+phase_2_advanced_brain:
+  - continuous-learning
+  - planning-strategies-magentic-one
+  - auto-optimization
+
+phase_3_additional_agents:
+  - architect-agent
+  - performance-agent
+  - migration-agent
+  - reviewer-agent-advanced
+
+phase_4_integrations:
+  - github-actions
+  - jira-linear
+  - slack-discord
+
+phase_5_multi_repo:
+  - multi-repo-support
+  - distributed-workers
+  - load-balancing
+
+phase_6_advanced_security:
+  - full-audit
+  - sandboxing
+  - policy-as-code
+
+phase_7_analytics:
+  - metrics-dashboard
+  - cost-optimization
+  - weekly-reports
+
+phase_8_extensibility:
+  - plugin-system
+  - custom-agents
+  - hooks-api
+
+@timeline
+estimated_mvp_completion: 10-weeks
+phases:
+  - name: milestone-1
+    duration: 2-weeks
+    focus: interface-and-auth
+  - name: milestone-2
+    duration: 2-weeks
+    focus: brain-agent-core
+  - name: milestone-3
+    duration: 1-week
+    focus: mini-brains
+  - name: milestone-4
+    duration: 2-weeks
+    focus: specialized-agents
+  - name: milestone-5
+    duration: 2-weeks
+    focus: workflow-sync
+  - name: milestone-6
+    duration: 1-week
+    focus: observability
+
+@conventions
+class_prefix: sd*
+event_prefix: SD_EVENT_*
+config_location: shared/contracts/
+prompts_location: cli/prompts/<agent>/
+test_coverage_target: 80%
+typescript_strict: true
+
+@documentation
+todo_file: TODO.md
+future_steps: FUTURE_STEPS.md
+architecture: ARCHITECTURE.md
+ai_instructions: AI_INSTRUCTIONS.md
+implementation_plan: docs/imp-plan.md
+mvp_spec: docs/MVP.md
